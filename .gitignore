@@ -1,0 +1,17 @@
+# IDEA
+.idea/
+*.iml
+*.ipr
+
+# Eclipse
+*.classpath
+.project
+.settings/
+
+# Genereted files
+build/
+bin/
+out/
+
+# Apple
+.DS_Store
