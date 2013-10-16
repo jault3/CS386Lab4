@@ -1,3 +1,19 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'mysql:mysql-connector-java:5.1.+'
+    compile 'com.google.guava:guava:15.+'
+    compile 'net.sf.opencsv:opencsv:2.+'
+
+    testCompile 'info.cukes:cucumber-java:1.1.5'
+    testCompile 'info.cukes:cucumber-testng:1.1.5'
+    testCompile 'info.cukes:cucumber-jvm:1.1.5'
+    testCompile 'org.testng:testng:6.+.+'
+    testCompile 'com.google.guava:guava-testlib:15.+'
+}
