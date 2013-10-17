@@ -1,0 +1,20 @@
+DROP SCHEMA IF EXISTS lab4 ;
+CREATE SCHEMA IF NOT EXISTS lab4 DEFAULT CHARACTER SET latin1 ;
+USE lab4 ;
+DROP TABLE IF EXISTS lab4.owner ;
+CREATE TABLE IF NOT EXISTS lab4.owner (
+  id INT NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(255) NULL,
+  phone_number VARCHAR(12) NULL,
+  last_name VARCHAR(255) NULL,
+  PRIMARY KEY (id))
+  ENGINE = InnoDB;
+DROP TABLE IF EXISTS lab4.unit ;
+CREATE TABLE IF NOT EXISTS lab4.unit (
+  name VARCHAR(255) NOT NULL,
+  number INT NOT NULL,
+  minimum INT NULL,
+  cost INT NULL,
+  PRIMARY KEY (name, number))
+  ENGINE = InnoDB;
+DROP TABLE IF EXISTS lab4.owner_has_unit ;

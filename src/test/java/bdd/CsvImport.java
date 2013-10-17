@@ -39,7 +39,6 @@ public class CsvImport {
     @Given("^A file \"([^\"]*)\"$")
     public void A_file(String fileName) {
         csv = new File("src/test/resources", fileName);
-        System.out.println(csv.getAbsolutePath());
     }
 
     @When("^I load the file$")
