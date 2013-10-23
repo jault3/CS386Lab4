@@ -16,7 +16,7 @@ id	first_name	phone_number	last_name
 15	Mason	445-334-2351	Jackson
 16	Jake	988-234-2332	White
 17	David	765-223-4334	Harris
-18	Gerardo	843-358-1991	Martin
+18	Gerardo	843-358-1991	Harris
 19	Phil	765-789-6567	Thompson
 20	Sally	987-654-3210	Garcia
 21	Mark	980-660-3204	Martinez
