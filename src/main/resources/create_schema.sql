@@ -1,6 +1,6 @@
-SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
+# SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+# SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+# SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
 
 DROP SCHEMA IF EXISTS lab4 ;
 CREATE SCHEMA IF NOT EXISTS lab4 DEFAULT CHARACTER SET latin1 ;
@@ -60,14 +60,14 @@ CREATE TABLE IF NOT EXISTS lab4.owner_has_unit (
 ENGINE = InnoDB;
 
 
-SET SQL_MODE=@OLD_SQL_MODE;
-SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+# SET SQL_MODE=@OLD_SQL_MODE;
+# SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+# SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 
 -- -----------------------------------------------------
 -- Load data from text files
 -- -----------------------------------------------------
 
-Load Data local Infile 'owner_data.txt' into table lab4.owner fields terminated by '\t' optionally enclosed by '"' lines terminated by '\n' ignore 1 lines ;
-Load Data local Infile 'unit_data.txt' into table lab4.unit fields terminated by '\t' optionally enclosed by '"' lines terminated by '\n' ignore 1 lines ;
-Load Data local Infile 'owner_has_unit_data.txt' into table lab4.owner_has_unit fields terminated by '\t' optionally enclosed by '"' lines terminated by '\n' ignore 1 lines ;
+# Load Data local Infile 'owner_data.txt' into table lab4.owner fields terminated by '\t' optionally enclosed by '"' lines terminated by '\n' ignore 1 lines ;
+# Load Data local Infile 'unit_data.txt' into table lab4.unit fields terminated by '\t' optionally enclosed by '"' lines terminated by '\n' ignore 1 lines ;
+# Load Data local Infile 'owner_has_unit_data.txt' into table lab4.owner_has_unit fields terminated by '\t' optionally enclosed by '"' lines terminated by '\n' ignore 1 lines ;

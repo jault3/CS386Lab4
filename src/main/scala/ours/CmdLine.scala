@@ -7,9 +7,6 @@ import org.apache.commons.cli.{DefaultParser, CommandLine, Options, Option}
 import java.util.Scanner
 import scala.util.{Success, Try}
 
-/**
- * @author mvolkhart
- */
 class CmdLine {
 
   private var connection :Connection = null
@@ -26,7 +23,7 @@ class CmdLine {
 
     // Add the new data
     // TODO restore call
-//    load(new File(commandLine.getOptionValue('d')))
+    load(commandLine)
 
     // Prompt for input and wait
     val scan = new Scanner(System.in)
@@ -45,13 +42,13 @@ class CmdLine {
       if (scan.hasNextLine) scan.nextLine()
       i match {
         case Success(1) => done = true
-        case Success(2) => do2()
-        case Success(3) => do3(scan)
-        case Success(4) => do4(scan)
-        case Success(5) => do5(scan)
-        case Success(6) => do6(scan)
-        case Success(7) => do7(scan)
-        case Success(8) => do8(scan)
+        case Success(2) => doStep2()
+        case Success(3) => doStep3(scan)
+        case Success(4) => doStep4(scan)
+        case Success(5) => doStep5(scan)
+        case Success(6) => doStep6(scan)
+        case Success(7) => doStep7(scan)
+        case Success(8) => doStep8(scan)
         case _ =>
           println("Not a valid option")
       }
@@ -62,7 +59,7 @@ class CmdLine {
     closeConnection()
   }
 
-  def do2() {
+  def doStep2() {
     val results = connection.createStatement().executeQuery("SELECT last_name, first_name, phone_number FROM owner ORDER BY last_name, first_name;")
     println("last name | first name | phone number")
     while (results.next()) {
@@ -74,7 +71,7 @@ class CmdLine {
     }
   }
 
-  def do3(scan :Scanner) {
+  def doStep3(scan :Scanner) {
     print("Unit name: ")
     val unitName = Try(scan.nextLine)
     print("Unit number: ")
@@ -95,7 +92,7 @@ class CmdLine {
     }
   }
 
-  def do4(scan :Scanner) {
+  def doStep4(scan :Scanner) {
     print("Unit name: ")
     val unitName = Try(scan.nextLine)
     print("Unit number: ")
@@ -117,7 +114,7 @@ class CmdLine {
     }
   }
 
-  def do5(scan :Scanner) {
+  def doStep5(scan :Scanner) {
     print("Unit name: ")
     val unitName = Try(scan.nextLine())
     val prep = connection.prepareStatement("select o.last_name, o.first_name, count(*) weeks_owned from owner o, owner_has_unit u where o.id = u.owner_id and u.unit_name = ? group by o.last_name having weeks_owned >= 1 order by o.last_name, o.first_name;")
@@ -133,7 +130,7 @@ class CmdLine {
     }
   }
 
-  def do6(scan :Scanner) {
+  def doStep6(scan :Scanner) {
     print("last name: ")
     val lastName = Try(scan.nextLine())
     print("first name: ")
@@ -152,7 +149,7 @@ class CmdLine {
     }
   }
 
-  def do7(scan :Scanner) {
+  def doStep7(scan :Scanner) {
     print("unit name: ")
     val unitName = Try(scan.nextLine())
     print("unit number: ")
@@ -171,13 +168,13 @@ class CmdLine {
     }
   }
 
-  def do8(scan :Scanner) {
+  def doStep8(scan :Scanner) {
     print("week number: ")
     val week = Try(scan.nextInt())
     val prep = connection.prepareStatement("select o.last_name, o.first_name, ohu.unit_name, ohu.unit_number from owner o, owner_has_unit ohu where ohu.owner_id = o.id and ohu.week_number = ? order by ohu.unit_name, ohu.unit_number, o.last_name, o.first_name;")
     prep.setInt(1, week.get)
     val results = prep.executeQuery()
-    println("unit name | unit number | last name | first name|")
+    println("unit name | unit number | last name | first name")
     while (results.next) {
       print(results.getString("unit_name"))
       print(" | ")
@@ -189,7 +186,7 @@ class CmdLine {
     }
   }
 
-  def load(toImport: File): Either[String, String] = {
+  def load(cmdLine: CommandLine) {
 
     // Create the tables, dropping any old
 //    val reader = new BufferedReader(new FileReader("src/main/resources/create_schema.sql"))
@@ -208,34 +205,22 @@ class CmdLine {
 //      connection.createStatement().execute(query + ";")
 //    }
 
-    val csvReader = new CSVReader(new FileReader(toImport))
-    val rows = csvReader.readAll()
-    Left("fail")
-    Right("pass")
 
+    // Import owner data
+    var prep = connection.prepareStatement("LOAD DATA LOCAL INFILE ? INTO TABLE lab4.owner FIELDS TERMINATED BY '\\t' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' IGNORE 1 LINES ;")
+    prep.setString(1, cmdLine.getOptionValue('o'))
+    prep.execute()
 
+    // Import has data
+    prep = connection.prepareStatement("LOAD DATA LOCAL INFILE ? INTO TABLE lab4.unit FIELDS TERMINATED BY '\\t' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' IGNORE 1 LINES ;")
+    prep.setString(1, cmdLine.getOptionValue('h'))
+    prep.execute()
 
-
-
-
-
-
-
-//    CSVReader reader = null;
-//    try {
-//      reader = new CSVReader(new FileReader(toImport));
-//    } catch (FileNotFoundException e) {
-//      return new Status(Status.FAIL, "File not found.");
-//    }
-//    try {
-//      List<String[]> rows = reader.readAll();
-//    } catch (IOException e) {
-//      e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-//    }
-//    return new Status(Status.PASS, "File successfully imported.");
+    // Import unit data
+    prep = connection.prepareStatement("LOAD DATA LOCAL INFILE ? INTO TABLE lab4.owner_has_unit FIELDS TERMINATED BY '\\t' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' IGNORE 1 LINES ;")
+    prep.setString(1, cmdLine.getOptionValue('n'))
+    prep.execute()
   }
-
-  def getView() = View.MENU
 
   def closeConnection() {
     connection.close()
@@ -246,16 +231,21 @@ class CmdLine {
       .desc("username for the database").longOpt("user").build()
     val password = Option.builder("p").required(false).argName("secret").hasArg(true)
       .desc("password for the database").longOpt("password").build()
-    val owners = Option.builder("d").required(true).argName("file").hasArg(true)
-      .desc("csv of data").longOpt("data").build()
+    val owners = Option.builder("o").required(true).argName("file").hasArg(true)
+      .desc("owner data").longOpt("owner").build()
+    val has = Option.builder("h").required(true).argName("file").hasArg(true)
+      .desc("has data").longOpt("has").build()
+    val units = Option.builder("n").required(true).argName("file").hasArg(true)
+      .desc("units data").longOpt("unit").build()
 
     val options = new Options().addOption(username).addOption(password).addOption(owners)
+      .addOption(has).addOption(units)
     val parser = new DefaultParser
     parser.parse(options, args)
   }
 
   def parseConnStringFromCmdLine(cmdLine: CommandLine): String = {
-    val template = "jdbc:mysql://localhost:3306/lab4?user=%s&password=%s"
+    val template = "jdbc:mysql://localhost:3306?user=%s&password=%s"
 
     val username = cmdLine.getOptionValue('u', "root")
     val password = cmdLine.getOptionValue('p', "")
