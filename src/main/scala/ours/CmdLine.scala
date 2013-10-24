@@ -188,8 +188,7 @@ class CmdLine {
 
   def load(cmdLine: CommandLine) {
 
-    // Create the tables, dropping any old
-//    val reader = new BufferedReader(new FileReader("src/main/resources/create_schema.sql"))
+    // Create the tables, dropping any old by reading the SQL create script
     val reader = new BufferedReader(new InputStreamReader(this.getClass
       .getClassLoader.getResourceAsStream("create_schema.sql")))
     val wholeFile = new StringBuffer
@@ -200,10 +199,6 @@ class CmdLine {
       currentLine = reader.readLine()
     }
     connection.prepareCall(wholeFile.toString).execute
-//    for (query <- wholeFile.split(';')) {
-//      println(query + ";")
-//      connection.createStatement().execute(query + ";")
-//    }
 
 
     // Import owner data
