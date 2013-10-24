@@ -1,15 +1,17 @@
-package ours
+package lab4
 
-import java.io.{InputStreamReader, BufferedReader, FileReader, File}
-import au.com.bytecode.opencsv.CSVReader
-import java.sql.{ResultSet, Connection, DriverManager}
+import java.sql.{Connection, DriverManager}
 import org.apache.commons.cli.{DefaultParser, CommandLine, Options, Option}
 import java.util.Scanner
 import scala.util.{Success, Try}
 
-class CmdLine {
+object CmdLine {
 
-  private var connection :Connection = null
+  private var connection: Connection = null
+
+  def main(args: Array[String]) {
+    run(args)
+  }
 
   def run(args: Array[String]) {
 
@@ -22,7 +24,6 @@ class CmdLine {
     connection.setClientInfo("autoReconnect", "true")
 
     // Add the new data
-    // TODO restore call
     load(commandLine)
 
     // Prompt for input and wait
@@ -30,7 +31,7 @@ class CmdLine {
     var done = false
     while (!done) {
       println("Select an option:")
-      println("1 - exit the application.")
+      println("1 - Exit the application.")
       println("2 - List names and phone numbers of owners.")
       println("3 - View minimum weeks owned.")
       println("4 - List maintenance shares.")
@@ -52,11 +53,13 @@ class CmdLine {
         case _ =>
           println("Not a valid option")
       }
-      println("")
+
+      // TODO: there is a bug here that causes scanner to require extra line breaks before
+      // responding to a request.
       if (scan.hasNextLine) scan.nextLine()
     }
 
-    closeConnection()
+    connection.close()
   }
 
   def doStep2() {
@@ -71,7 +74,7 @@ class CmdLine {
     }
   }
 
-  def doStep3(scan :Scanner) {
+  def doStep3(scan: Scanner) {
     print("Unit name: ")
     val unitName = Try(scan.nextLine)
     print("Unit number: ")
@@ -92,7 +95,7 @@ class CmdLine {
     }
   }
 
-  def doStep4(scan :Scanner) {
+  def doStep4(scan: Scanner) {
     print("Unit name: ")
     val unitName = Try(scan.nextLine)
     print("Unit number: ")
@@ -114,10 +117,10 @@ class CmdLine {
     }
   }
 
-  def doStep5(scan :Scanner) {
+  def doStep5(scan: Scanner) {
     print("Unit name: ")
     val unitName = Try(scan.nextLine())
-    val prep = connection.prepareStatement("select o.last_name, o.first_name, count(*) weeks_owned from owner o, owner_has_unit u where o.id = u.owner_id and u.unit_name = ? group by o.last_name having weeks_owned >= 1 order by o.last_name, o.first_name;")
+    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, count(*) weeks_owned FROM owner o, owner_has_unit u WHERE o.id = u.owner_id AND u.unit_name = ? GROUP BY o.last_name HAVING weeks_owned >= 1 ORDER BY o.last_name, o.first_name;")
     prep.setString(1, unitName.get)
     val results = prep.executeQuery()
     println("last name | first name | weeks owned")
@@ -130,12 +133,12 @@ class CmdLine {
     }
   }
 
-  def doStep6(scan :Scanner) {
+  def doStep6(scan: Scanner) {
     print("last name: ")
     val lastName = Try(scan.nextLine())
     print("first name: ")
     val firstName = Try(scan.nextLine())
-    val prep = connection.prepareStatement("select ohu.unit_name,ohu.unit_number, GROUP_CONCAT(ohu.week_number SEPARATOR ', ') AS weeks from owner o, owner_has_unit ohu where o.last_name = ? AND o.first_name = ? and o.id = ohu.owner_id GROUP BY ohu.unit_name, ohu.unit_number order by ohu.unit_name, ohu.unit_number, ohu.week_number;")
+    val prep = connection.prepareStatement("SELECT ohu.unit_name,ohu.unit_number, GROUP_CONCAT(ohu.week_number SEPARATOR ', ') AS weeks FROM owner o, owner_has_unit ohu WHERE o.last_name = ? AND o.first_name = ? AND o.id = ohu.owner_id GROUP BY ohu.unit_name, ohu.unit_number ORDER BY ohu.unit_name, ohu.unit_number, ohu.week_number;")
     prep.setString(1, lastName.get)
     prep.setString(2, firstName.get)
     val results = prep.executeQuery()
@@ -149,12 +152,12 @@ class CmdLine {
     }
   }
 
-  def doStep7(scan :Scanner) {
+  def doStep7(scan: Scanner) {
     print("unit name: ")
     val unitName = Try(scan.nextLine())
     print("unit number: ")
     val unitNumber = Try(scan.nextInt())
-    val prep = connection.prepareStatement("select o.last_name, o.first_name, ohu.week_number from owner o, owner_has_unit ohu where ohu.owner_id = o.id and ohu.unit_name = ? and ohu.unit_number = ? order by ohu.week_number;")
+    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.week_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.unit_name = ? AND ohu.unit_number = ? ORDER BY ohu.week_number;")
     prep.setString(1, unitName.get)
     prep.setInt(2, unitNumber.get)
     val results = prep.executeQuery()
@@ -168,10 +171,10 @@ class CmdLine {
     }
   }
 
-  def doStep8(scan :Scanner) {
+  def doStep8(scan: Scanner) {
     print("week number: ")
     val week = Try(scan.nextInt())
-    val prep = connection.prepareStatement("select o.last_name, o.first_name, ohu.unit_name, ohu.unit_number from owner o, owner_has_unit ohu where ohu.owner_id = o.id and ohu.week_number = ? order by ohu.unit_name, ohu.unit_number, o.last_name, o.first_name;")
+    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.unit_name, ohu.unit_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.week_number = ? ORDER BY ohu.unit_name, ohu.unit_number, o.last_name, o.first_name;")
     prep.setInt(1, week.get)
     val results = prep.executeQuery()
     println("unit name | unit number | last name | first name")
@@ -188,37 +191,33 @@ class CmdLine {
 
   def load(cmdLine: CommandLine) {
 
-    // Create the tables, dropping any old by reading the SQL create script
-    val reader = new BufferedReader(new InputStreamReader(this.getClass
-      .getClassLoader.getResourceAsStream("create_schema.sql")))
-    val wholeFile = new StringBuffer
-    var currentLine: String = ""
-    while(currentLine != null) {
-      wholeFile.append(currentLine)
-      wholeFile.append(" ")
-      currentLine = reader.readLine()
-    }
-    connection.prepareCall(wholeFile.toString).execute
+    // Create the database and the tables
+    connection.createStatement().execute("DROP SCHEMA IF EXISTS lab4 ;")
+    connection.createStatement().execute("CREATE SCHEMA IF NOT EXISTS lab4 DEFAULT CHARACTER SET latin1 ;")
+    connection.createStatement().execute("CREATE TABLE IF NOT EXISTS lab4.owner (\n  id INT NOT NULL AUTO_INCREMENT,\n  first_name VARCHAR(255) NULL,\n  phone_number VARCHAR(12) NULL,\n  last_name VARCHAR(255) NULL,\n  PRIMARY KEY (id))\nENGINE = InnoDB;")
+    connection.createStatement().execute("CREATE TABLE IF NOT EXISTS lab4.unit (\n  name VARCHAR(255) NOT NULL,\n  number INT NOT NULL,\n  minimum INT NULL,\n  cost INT NULL,\n  PRIMARY KEY (name, number))\nENGINE = InnoDB;")
+    connection.createStatement().execute("CREATE TABLE IF NOT EXISTS lab4.owner_has_unit (\n  owner_id INT NOT NULL,\n  unit_name VARCHAR(255) NOT NULL,\n  unit_number INT NOT NULL,\n  week_number INT NOT NULL,\n  PRIMARY KEY (owner_id, unit_name, unit_number, week_number),\n  INDEX fk_owner_has_unit_unit1_idx (unit_name ASC, unit_number ASC),\n  INDEX fk_owner_has_unit_owner_idx (owner_id ASC),\n  CONSTRAINT fk_owner_has_unit_owner\n    FOREIGN KEY (owner_id)\n    REFERENCES lab4.owner (id)\n    ON DELETE NO ACTION\n    ON UPDATE NO ACTION,\n  CONSTRAINT fk_owner_has_unit_unit1\n    FOREIGN KEY (unit_name , unit_number)\n    REFERENCES lab4.unit (name , number)\n    ON DELETE NO ACTION\n    ON UPDATE NO ACTION)\nENGINE = InnoDB;")
 
+    // Switch to using the new database
+    connection.close()
+    connection = DriverManager.getConnection(parseConnStringFromCmdLine(cmdLine,  true))
+    connection.setClientInfo("autoReconnect", "true")
 
     // Import owner data
-    var prep = connection.prepareStatement("LOAD DATA LOCAL INFILE ? INTO TABLE lab4.owner FIELDS TERMINATED BY '\\t' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' IGNORE 1 LINES ;")
+    var prep = connection.prepareStatement("LOAD DATA LOCAL INFILE ? INTO TABLE lab4.owner FIELDS TERMINATED BY '\\t' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' IGNORE 1 LINES (id, first_name, phone_number, @var) SET last_name = TRIM(TRAILING '\r' FROM @var);")
     prep.setString(1, cmdLine.getOptionValue('o'))
     prep.execute()
 
+    // Import unit data
+    prep = connection.prepareStatement("LOAD DATA LOCAL INFILE ? INTO TABLE lab4.unit FIELDS TERMINATED BY '\\t' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' IGNORE 1 LINES (name, number, minimum, @var) SET cost = TRIM(TRAILING '\r' FROM @var);")
+    prep.setString(1, cmdLine.getOptionValue('n'))
+    prep.execute()
+
     // Import has data
-    prep = connection.prepareStatement("LOAD DATA LOCAL INFILE ? INTO TABLE lab4.unit FIELDS TERMINATED BY '\\t' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' IGNORE 1 LINES ;")
+    prep = connection.prepareStatement("LOAD DATA LOCAL INFILE ? INTO TABLE lab4.owner_has_unit FIELDS TERMINATED BY '\\t' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' IGNORE 1 LINES (owner_id, unit_name, unit_number, @var) SET week_number = TRIM(TRAILING '\r' FROM @var);")
     prep.setString(1, cmdLine.getOptionValue('h'))
     prep.execute()
 
-    // Import unit data
-    prep = connection.prepareStatement("LOAD DATA LOCAL INFILE ? INTO TABLE lab4.owner_has_unit FIELDS TERMINATED BY '\\t' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' IGNORE 1 LINES ;")
-    prep.setString(1, cmdLine.getOptionValue('n'))
-    prep.execute()
-  }
-
-  def closeConnection() {
-    connection.close()
   }
 
   def setupCommandLine(args: Array[String]): CommandLine = {
@@ -239,11 +238,15 @@ class CmdLine {
     parser.parse(options, args)
   }
 
-  def parseConnStringFromCmdLine(cmdLine: CommandLine): String = {
-    val template = "jdbc:mysql://localhost:3306?user=%s&password=%s"
+  def parseConnStringFromCmdLine(cmdLine: CommandLine, includeDb: Boolean = false): String = {
+    val template = "jdbc:mysql://localhost:3306%s?user=%s&password=%s"
 
     val username = cmdLine.getOptionValue('u', "root")
     val password = cmdLine.getOptionValue('p', "")
-    String.format(template, username, password)
+    if (includeDb) {
+      String.format(template, "/lab4", username, password)
+    } else {
+      String.format(template, "", username, password)
+    }
   }
 }
