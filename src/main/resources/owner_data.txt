@@ -10,7 +10,7 @@ id	first_name	phone_number	last_name
 9	Heather	827-366-4643	Wilson
 10	Amanda	432-456-4643	Moore
 11	Josh	911-324-3344	Ault
-12	Ben	960-122-2342	Taylor
+12	Ben	    960-122-2342	Taylor
 13	Sara	885-464-3318	Anderson
 14	Steve	909-998-7634	Thomas
 15	Mason	445-334-2351	Jackson
