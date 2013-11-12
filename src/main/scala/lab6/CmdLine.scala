@@ -1,9 +1,8 @@
 package lab6
 
-import java.sql.DriverManager
 import org.apache.commons.cli.{DefaultParser, CommandLine, Options, Option}
 import java.util.Scanner
-import scala.util.{Success, Try}
+import scala.util.{Failure, Try, Success}
 import com.amazonaws.services.simpledb.{AmazonSimpleDBClient, AmazonSimpleDB}
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.regions.{Regions, Region}
@@ -11,7 +10,6 @@ import com.amazonaws.services.simpledb.model._
 import au.com.bytecode.opencsv.CSVReader
 import java.io.FileReader
 import scala.collection.mutable.ListBuffer
-import scala.util.Success
 import java.util
 import scala.collection.JavaConverters._
 
@@ -30,6 +28,10 @@ object CmdLine {
     // Connect to the database
     connection = connectToAws(commandLine)
 
+    Try(load(commandLine)) match {
+      case Failure(ex) => println("There was an error: " + ex.getMessage)
+    }
+
     // Prompt for input and wait
     val scan = new Scanner(System.in)
     var done = false
@@ -43,8 +45,8 @@ object CmdLine {
       println("6 - User lookup. Shows all shares a person owns.")
       println("7 - Show owners for unit by week.")
       println("8 - Show ownerships for specified week.")
-      val i = Try(scan.nextInt)
-      if (scan.hasNextLine) scan.nextLine()
+      val i = Try(Integer.parseInt(scan.nextLine()))
+      //if (scan.hasNextLine) scan.nextLine()
       i match {
         case Success(1) => done = true
         case Success(2) => doStep2()
@@ -65,15 +67,15 @@ object CmdLine {
   }
 
   def doStep2() {
-    val results = connection.createStatement().executeQuery("SELECT last_name, first_name, phone_number FROM owner ORDER BY last_name, first_name;")
-    println("last name | first name | phone number")
-    while (results.next()) {
-      print(results.getString("last_name"))
-      print(" | ")
-      print(results.getString("first_name"))
-      print(" | ")
-      println(results.getString("phone_number"))
-    }
+//    val results = connection.createStatement().executeQuery("SELECT last_name, first_name, phone_number FROM owner ORDER BY last_name, first_name;")
+//    println("last name | first name | phone number")
+//    while (results.next()) {
+//      print(results.getString("last_name"))
+//      print(" | ")
+//      print(results.getString("first_name"))
+//      print(" | ")
+//      println(results.getString("phone_number"))
+//    }
   }
 
   def doStep3(scan: Scanner) {
@@ -84,17 +86,17 @@ object CmdLine {
     print("Weeks owned: ")
     val weeks = Try(scan.nextInt)
 
-    val prep = connection.prepareStatement("SELECT last_name, first_name FROM owner, owner_has_unit WHERE unit_name = ? AND unit_number = ? AND owner_id = id GROUP BY last_name, first_name HAVING COUNT(DISTINCT week_number) >= ?;")
-    prep.setString(1, unitName.get)
-    prep.setInt(2, unitNumber.get)
-    prep.setInt(3, weeks.get)
-    val results = prep.executeQuery
-    println("last name | first name")
-    while (results.next()) {
-      print(results.getString("last_name"))
-      print(" | ")
-      println(results.getString("first_name"))
-    }
+//    val prep = connection.prepareStatement("SELECT last_name, first_name FROM owner, owner_has_unit WHERE unit_name = ? AND unit_number = ? AND owner_id = id GROUP BY last_name, first_name HAVING COUNT(DISTINCT week_number) >= ?;")
+//    prep.setString(1, unitName.get)
+//    prep.setInt(2, unitNumber.get)
+//    prep.setInt(3, weeks.get)
+//    val results = prep.executeQuery
+//    println("last name | first name")
+//    while (results.next()) {
+//      print(results.getString("last_name"))
+//      print(" | ")
+//      println(results.getString("first_name"))
+//    }
   }
 
   def doStep4(scan: Scanner) {
@@ -103,36 +105,36 @@ object CmdLine {
     print("Unit number: ")
     val unitNumber = Try(scan.nextInt)
 
-    val prep = connection.prepareStatement("SELECT last_name, first_name, CAST(cost/(SELECT COUNT(DISTINCT week_number) FROM unit, owner, owner_has_unit WHERE unit_name = ? AND unit_number = ? AND owner.id = owner_id AND unit.name = unit_name AND unit.number = unit_number)*COUNT(DISTINCT week_number) AS DECIMAL(40,2)) AS share FROM unit, owner, owner_has_unit WHERE unit_name = ? AND unit_number = ? AND owner.id = owner_id AND unit.name = unit_name AND unit.number = unit_number GROUP BY last_name, first_name;")
-    prep.setString(1, unitName.get)
-    prep.setInt(2, unitNumber.get)
-    prep.setString(3, unitName.get)
-    prep.setInt(4, unitNumber.get)
-    val results = prep.executeQuery
-    println("last name | first name | share owed")
-    while (results.next) {
-      print(results.getString("last_name"))
-      print(" | ")
-      print(results.getString("first_name"))
-      print(" | ")
-      println(results.getDouble("share"))
-    }
+//    val prep = connection.prepareStatement("SELECT last_name, first_name, CAST(cost/(SELECT COUNT(DISTINCT week_number) FROM unit, owner, owner_has_unit WHERE unit_name = ? AND unit_number = ? AND owner.id = owner_id AND unit.name = unit_name AND unit.number = unit_number)*COUNT(DISTINCT week_number) AS DECIMAL(40,2)) AS share FROM unit, owner, owner_has_unit WHERE unit_name = ? AND unit_number = ? AND owner.id = owner_id AND unit.name = unit_name AND unit.number = unit_number GROUP BY last_name, first_name;")
+//    prep.setString(1, unitName.get)
+//    prep.setInt(2, unitNumber.get)
+//    prep.setString(3, unitName.get)
+//    prep.setInt(4, unitNumber.get)
+//    val results = prep.executeQuery
+//    println("last name | first name | share owed")
+//    while (results.next) {
+//      print(results.getString("last_name"))
+//      print(" | ")
+//      print(results.getString("first_name"))
+//      print(" | ")
+//      println(results.getDouble("share"))
+//    }
   }
 
   def doStep5(scan: Scanner) {
     print("Unit name: ")
     val unitName = Try(scan.nextLine())
-    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, count(*) weeks_owned FROM owner o, owner_has_unit u WHERE o.id = u.owner_id AND u.unit_name = ? GROUP BY o.last_name HAVING weeks_owned >= 1 ORDER BY o.last_name, o.first_name;")
-    prep.setString(1, unitName.get)
-    val results = prep.executeQuery()
-    println("last name | first name | weeks owned")
-    while (results.next) {
-      print(results.getString("last_name"))
-      print(" | ")
-      print(results.getString("first_name"))
-      print(" | ")
-      println(results.getString("weeks_owned"))
-    }
+//    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, count(*) weeks_owned FROM owner o, owner_has_unit u WHERE o.id = u.owner_id AND u.unit_name = ? GROUP BY o.last_name HAVING weeks_owned >= 1 ORDER BY o.last_name, o.first_name;")
+//    prep.setString(1, unitName.get)
+//    val results = prep.executeQuery()
+//    println("last name | first name | weeks owned")
+//    while (results.next) {
+//      print(results.getString("last_name"))
+//      print(" | ")
+//      print(results.getString("first_name"))
+//      print(" | ")
+//      println(results.getString("weeks_owned"))
+//    }
   }
 
   def doStep6(scan: Scanner) {
@@ -140,18 +142,18 @@ object CmdLine {
     val lastName = Try(scan.nextLine())
     print("first name: ")
     val firstName = Try(scan.nextLine())
-    val prep = connection.prepareStatement("SELECT ohu.unit_name,ohu.unit_number, GROUP_CONCAT(ohu.week_number SEPARATOR ', ') AS weeks FROM owner o, owner_has_unit ohu WHERE o.last_name = ? AND o.first_name = ? AND o.id = ohu.owner_id GROUP BY ohu.unit_name, ohu.unit_number ORDER BY ohu.unit_name, ohu.unit_number, ohu.week_number;")
-    prep.setString(1, lastName.get)
-    prep.setString(2, firstName.get)
-    val results = prep.executeQuery()
-    println("unit name | unit number | weeks owned")
-    while (results.next) {
-      print(results.getString("unit_name"))
-      print(" | ")
-      print(results.getInt("unit_number"))
-      print(" | ")
-      println(results.getString("weeks"))
-    }
+//    val prep = connection.prepareStatement("SELECT ohu.unit_name,ohu.unit_number, GROUP_CONCAT(ohu.week_number SEPARATOR ', ') AS weeks FROM owner o, owner_has_unit ohu WHERE o.last_name = ? AND o.first_name = ? AND o.id = ohu.owner_id GROUP BY ohu.unit_name, ohu.unit_number ORDER BY ohu.unit_name, ohu.unit_number, ohu.week_number;")
+//    prep.setString(1, lastName.get)
+//    prep.setString(2, firstName.get)
+//    val results = prep.executeQuery()
+//    println("unit name | unit number | weeks owned")
+//    while (results.next) {
+//      print(results.getString("unit_name"))
+//      print(" | ")
+//      print(results.getInt("unit_number"))
+//      print(" | ")
+//      println(results.getString("weeks"))
+//    }
   }
 
   def doStep7(scan: Scanner) {
@@ -159,36 +161,36 @@ object CmdLine {
     val unitName = Try(scan.nextLine())
     print("unit number: ")
     val unitNumber = Try(scan.nextInt())
-    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.week_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.unit_name = ? AND ohu.unit_number = ? ORDER BY ohu.week_number;")
-    prep.setString(1, unitName.get)
-    prep.setInt(2, unitNumber.get)
-    val results = prep.executeQuery()
-    println("week | last name | first name")
-    while (results.next) {
-      print(results.getInt("week_number"))
-      print(" | ")
-      print(results.getString("last_name"))
-      print(" | ")
-      println(results.getString("first_name"))
-    }
+//    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.week_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.unit_name = ? AND ohu.unit_number = ? ORDER BY ohu.week_number;")
+//    prep.setString(1, unitName.get)
+//    prep.setInt(2, unitNumber.get)
+//    val results = prep.executeQuery()
+//    println("week | last name | first name")
+//    while (results.next) {
+//      print(results.getInt("week_number"))
+//      print(" | ")
+//      print(results.getString("last_name"))
+//      print(" | ")
+//      println(results.getString("first_name"))
+//    }
   }
 
   def doStep8(scan: Scanner) {
     print("week number: ")
     val week = Try(scan.nextInt())
-    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.unit_name, ohu.unit_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.week_number = ? ORDER BY ohu.unit_name, ohu.unit_number, o.last_name, o.first_name;")
-    prep.setInt(1, week.get)
-    val results = prep.executeQuery()
-    println("unit name | unit number | last name | first name")
-    while (results.next) {
-      print(results.getString("unit_name"))
-      print(" | ")
-      print(results.getInt("unit_number"))
-      print(" | ")
-      print(results.getString("last_name"))
-      print(" | ")
-      println(results.getString("first_name"))
-    }
+//    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.unit_name, ohu.unit_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.week_number = ? ORDER BY ohu.unit_name, ohu.unit_number, o.last_name, o.first_name;")
+//    prep.setInt(1, week.get)
+//    val results = prep.executeQuery()
+//    println("unit name | unit number | last name | first name")
+//    while (results.next) {
+//      print(results.getString("unit_name"))
+//      print(" | ")
+//      print(results.getInt("unit_number"))
+//      print(" | ")
+//      print(results.getString("last_name"))
+//      print(" | ")
+//      println(results.getString("first_name"))
+//    }
   }
 
   def load(cmdLine: CommandLine) {
@@ -224,19 +226,19 @@ object CmdLine {
     val retVal = new util.ArrayList[ReplaceableItem]()
 
     // For every every entry...
-    for (entry: Array[String] <- entries.subList(1, entries.size() - 1)) {
+    for (j <- 1 to entries.size() - 1) {
+      val entry: Array[String] = entries.get(j)
       val attributes = new ListBuffer[ReplaceableAttribute]
 
       // For every column...
-      for (i <- 1 to columns.length) {
+      for (i <- 1 to columns.length - 1) {
 
         // Create and add an attribute.
         attributes += new ReplaceableAttribute(columns(i), entry(i), true);
       }
       retVal.add(new ReplaceableItem(entry(0)).withAttributes(attributes.asJava))
     }
-
-
+    return retVal
   }
 
   def setupCommandLine(args: Array[String]): CommandLine = {
@@ -246,13 +248,11 @@ object CmdLine {
       .desc("AWS secret key").longOpt("secret").build()
     val owners = Option.builder("o").required(true).argName("file").hasArg(true)
       .desc("owner data").longOpt("owner").build()
-    val has = Option.builder("h").required(true).argName("file").hasArg(true)
-      .desc("has data").longOpt("has").build()
-    val units = Option.builder("n").required(true).argName("file").hasArg(true)
+    val units = Option.builder("u").required(true).argName("file").hasArg(true)
       .desc("units data").longOpt("unit").build()
 
     val options = new Options().addOption(accessKey).addOption(secretKey).addOption(owners)
-      .addOption(has).addOption(units)
+      .addOption(units)
     val parser = new DefaultParser
     parser.parse(options, args)
   }
