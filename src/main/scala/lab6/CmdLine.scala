@@ -7,10 +7,13 @@ import scala.util.{Success, Try}
 import com.amazonaws.services.simpledb.{AmazonSimpleDBClient, AmazonSimpleDB}
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.regions.{Regions, Region}
-import com.amazonaws.services.simpledb.model.{ReplaceableAttribute, ReplaceableItem, CreateDomainRequest, DeleteDomainRequest}
+import com.amazonaws.services.simpledb.model._
 import au.com.bytecode.opencsv.CSVReader
 import java.io.FileReader
 import scala.collection.mutable.ListBuffer
+import scala.util.Success
+import java.util
+import scala.collection.JavaConverters._
 
 object CmdLine {
 
@@ -25,7 +28,7 @@ object CmdLine {
     val commandLine = setupCommandLine(args)
 
     // Connect to the database
-    val connection = connectToAws(commandLine)
+    connection = connectToAws(commandLine)
 
     // Prompt for input and wait
     val scan = new Scanner(System.in)
@@ -192,47 +195,47 @@ object CmdLine {
 
     val ownerDomain = "lab6.owner"
     val unitDomain = "lab6.unit"
-    val hasDomain: String = "lab6.owner_has_unit"
 
     // Delete existing domains
     connection.deleteDomain(new DeleteDomainRequest(ownerDomain))
     connection.deleteDomain(new DeleteDomainRequest(unitDomain))
-    connection.deleteDomain(new DeleteDomainRequest(hasDomain))
-    
+
     // Create the domains we need
     connection.createDomain(new CreateDomainRequest(ownerDomain))
     connection.createDomain(new CreateDomainRequest(unitDomain))
-    connection.createDomain(new CreateDomainRequest(hasDomain))
-    
+
     // Populate domains
-    connection.batchPutAttributes(ownerDomain, populateOwner(cmdLine.getOptionValue('o')))
+    connection.batchPutAttributes(new BatchPutAttributesRequest(ownerDomain,
+      readData(cmdLine.getOptionValue('o'))))
+    connection.batchPutAttributes(new BatchPutAttributesRequest(unitDomain,
+      readData(cmdLine.getOptionValue('u'))))
+  }
 
-    // Create the database and the tables
-    connection.createStatement().execute("DROP SCHEMA IF EXISTS lab4 ;")
-    connection.createStatement().execute("CREATE SCHEMA IF NOT EXISTS lab4 DEFAULT CHARACTER SET latin1 ;")
-    connection.createStatement().execute("CREATE TABLE IF NOT EXISTS lab4.owner (\n  id INT NOT NULL AUTO_INCREMENT,\n  first_name VARCHAR(255) NULL,\n  phone_number VARCHAR(12) NULL,\n  last_name VARCHAR(255) NULL,\n  PRIMARY KEY (id))\nENGINE = InnoDB;")
-    connection.createStatement().execute("CREATE TABLE IF NOT EXISTS lab4.unit (\n  name VARCHAR(255) NOT NULL,\n  number INT NOT NULL,\n  minimum INT NULL,\n  cost INT NULL,\n  PRIMARY KEY (name, number))\nENGINE = InnoDB;")
-    connection.createStatement().execute("CREATE TABLE IF NOT EXISTS lab4.owner_has_unit (\n  owner_id INT NOT NULL,\n  unit_name VARCHAR(255) NOT NULL,\n  unit_number INT NOT NULL,\n  week_number INT NOT NULL,\n  PRIMARY KEY (owner_id, unit_name, unit_number, week_number),\n  INDEX fk_owner_has_unit_unit1_idx (unit_name ASC, unit_number ASC),\n  INDEX fk_owner_has_unit_owner_idx (owner_id ASC),\n  CONSTRAINT fk_owner_has_unit_owner\n    FOREIGN KEY (owner_id)\n    REFERENCES lab4.owner (id)\n    ON DELETE NO ACTION\n    ON UPDATE NO ACTION,\n  CONSTRAINT fk_owner_has_unit_unit1\n    FOREIGN KEY (unit_name , unit_number)\n    REFERENCES lab4.unit (name , number)\n    ON DELETE NO ACTION\n    ON UPDATE NO ACTION)\nENGINE = InnoDB;")
+  def readData(file: String): util.ArrayList[ReplaceableItem] = {
 
-    // Switch to using the new database
-    connection.close()
-    connection = DriverManager.getConnection(parseConnStringFromCmdLine(cmdLine, true))
-    connection.setClientInfo("autoReconnect", "true")
+    // Read the whole file. It's short so no memory issues.
+    val reader = new CSVReader(new FileReader(file))
+    val entries = reader.readAll()
+    reader.close()
 
-    // Import owner data
-    var prep = connection.prepareStatement("LOAD DATA LOCAL INFILE ? INTO TABLE lab4.owner FIELDS TERMINATED BY '\\t' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' IGNORE 1 LINES (id, first_name, phone_number, @var) SET last_name = TRIM(TRAILING '\r' FROM @var);")
-    prep.setString(1, cmdLine.getOptionValue('o'))
-    prep.execute()
+    // The first entry is the columns
+    val columns = entries.get(0)
 
-    // Import unit data
-    prep = connection.prepareStatement("LOAD DATA LOCAL INFILE ? INTO TABLE lab4.unit FIELDS TERMINATED BY '\\t' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' IGNORE 1 LINES (name, number, minimum, @var) SET cost = TRIM(TRAILING '\r' FROM @var);")
-    prep.setString(1, cmdLine.getOptionValue('n'))
-    prep.execute()
+    val retVal = new util.ArrayList[ReplaceableItem]()
 
-    // Import has data
-    prep = connection.prepareStatement("LOAD DATA LOCAL INFILE ? INTO TABLE lab4.owner_has_unit FIELDS TERMINATED BY '\\t' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' IGNORE 1 LINES (owner_id, unit_name, unit_number, @var) SET week_number = TRIM(TRAILING '\r' FROM @var);")
-    prep.setString(1, cmdLine.getOptionValue('h'))
-    prep.execute()
+    // For every every entry...
+    for (entry: Array[String] <- entries.subList(1, entries.size() - 1)) {
+      val attributes = new ListBuffer[ReplaceableAttribute]
+
+      // For every column...
+      for (i <- 1 to columns.length) {
+
+        // Create and add an attribute.
+        attributes += new ReplaceableAttribute(columns(i), entry(i), true);
+      }
+      retVal.add(new ReplaceableItem(entry(0)).withAttributes(attributes.asJava))
+    }
+
 
   }
 
