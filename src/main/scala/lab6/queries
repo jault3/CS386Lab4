@@ -1,7 +1,7 @@
 2. select * from `lab6.owner` where last_name is not null  and first_name is not null order by last_name
 
 
-3. 	select * from `lab6.owner` where last_name is not null  and first_name is not null
+3. 	select * from `lab6.owner` where last_name is not null
 	select * from `lab6.unit` where number = '203' and name = 'Evergreen'
 	//gives back the row of the matching unit 
 	//loop through attributes and store/count repeating numbers

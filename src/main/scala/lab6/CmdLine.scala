@@ -101,6 +101,12 @@ object CmdLine {
     print("Weeks owned: ")
     val weeks = Try(scan.nextInt)
 
+    val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
+    val unitRequest = new SelectRequest(s"select * from `$unitDomain` where number = '$unitNumber' " +
+      s"and name = '$unitName'")
+
+
+
 //    val prep = connection.prepareStatement("SELECT last_name, first_name FROM owner, owner_has_unit WHERE unit_name = ? AND unit_number = ? AND owner_id = id GROUP BY last_name, first_name HAVING COUNT(DISTINCT week_number) >= ?;")
 //    prep.setString(1, unitName.get)
 //    prep.setInt(2, unitNumber.get)
