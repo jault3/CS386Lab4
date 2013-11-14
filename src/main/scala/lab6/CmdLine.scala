@@ -12,10 +12,13 @@ import java.io.FileReader
 import scala.collection.mutable.ListBuffer
 import java.util
 import scala.collection.JavaConverters._
+import scala.collection.JavaConversions._
 
 object CmdLine {
 
   var connection: AmazonSimpleDB = null
+  val ownerDomain = "lab6.owner"
+  val unitDomain = "lab6.unit"
 
   def main(args: Array[String]) {
     run(args)
@@ -28,16 +31,13 @@ object CmdLine {
     // Connect to the database
     connection = connectToAws(commandLine)
 
-    Try(load(commandLine)) match {
-      case Failure(ex) => println("There was an error: " + ex.getMessage)
-    }
-
     // Prompt for input and wait
     val scan = new Scanner(System.in)
     var done = false
     while (!done) {
       println("Select an option:")
-      println("1 - Exit the application.")
+      println("0 - Exit the application.")
+      println("1 - Load data.")
       println("2 - List names and phone numbers of owners.")
       println("3 - View minimum weeks owned.")
       println("4 - List maintenance shares.")
@@ -48,7 +48,11 @@ object CmdLine {
       val i = Try(Integer.parseInt(scan.nextLine()))
       //if (scan.hasNextLine) scan.nextLine()
       i match {
-        case Success(1) => done = true
+        case Success(0) => done = true
+        case Success(1) => Try(load(commandLine)) match {
+          case Failure(ex) => println("There was an error: " + ex.getMessage)
+          case Success(_) => println("Loaded the data!")
+        }
         case Success(2) => doStep2()
         case Success(3) => doStep3(scan)
         case Success(4) => doStep4(scan)
@@ -67,15 +71,26 @@ object CmdLine {
   }
 
   def doStep2() {
-//    val results = connection.createStatement().executeQuery("SELECT last_name, first_name, phone_number FROM owner ORDER BY last_name, first_name;")
-//    println("last name | first name | phone number")
-//    while (results.next()) {
-//      print(results.getString("last_name"))
-//      print(" | ")
-//      print(results.getString("first_name"))
-//      print(" | ")
-//      println(results.getString("phone_number"))
-//    }
+    val selectRequest = new SelectRequest(s"select last_name, first_name, " +
+      s"phone_number from `$ownerDomain` where last_name is not null order by last_name")
+    val orderedList = new ListBuffer[(String, String)]
+    for (item: Item <- connection.select(selectRequest).getItems) {
+      var lastName :String = null
+      var firstName :String = null
+      var phoneNumber :String = null
+      println(s"Item: ${item.getName}")
+      for (attribute: Attribute <- item.getAttributes) {
+        attribute.getName match {
+          case "last_name" => lastName = attribute.getValue
+          case "first_name" => firstName = attribute.getValue
+          case "phone_number" => phoneNumber = attribute.getValue
+        }
+      }
+      orderedList += ((s"$lastName,$firstName", phoneNumber))
+    }
+    for (entry <- orderedList.sorted) {
+      println(entry.toString().replace(",", " | "))
+    }
   }
 
   def doStep3(scan: Scanner) {
@@ -195,9 +210,6 @@ object CmdLine {
 
   def load(cmdLine: CommandLine) {
 
-    val ownerDomain = "lab6.owner"
-    val unitDomain = "lab6.unit"
-
     // Delete existing domains
     connection.deleteDomain(new DeleteDomainRequest(ownerDomain))
     connection.deleteDomain(new DeleteDomainRequest(unitDomain))
@@ -205,6 +217,7 @@ object CmdLine {
     // Create the domains we need
     connection.createDomain(new CreateDomainRequest(ownerDomain))
     connection.createDomain(new CreateDomainRequest(unitDomain))
+    println("Created")
 
     // Populate domains
     connection.batchPutAttributes(new BatchPutAttributesRequest(ownerDomain,
@@ -261,7 +274,7 @@ object CmdLine {
     val credentials = new BasicAWSCredentials(cmdLine.getOptionValue('a'),
       cmdLine.getOptionValue('s'))
     val sdb = new AmazonSimpleDBClient(credentials)
-    sdb.setRegion(Region.getRegion(Regions.US_WEST_2))
+    sdb.setRegion(Region.getRegion(Regions.US_EAST_1))
     return sdb
   }
 }
