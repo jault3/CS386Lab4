@@ -1,0 +1,47 @@
+2. select * from `lab6.owner` where last_name is not null  and first_name is not null order by last_name
+
+
+3. 	select * from `lab6.owner` where last_name is not null  and first_name is not null
+	select * from `lab6.unit` where number = '203' and name = 'Evergreen'
+	//gives back the row of the matching unit 
+	//loop through attributes and store/count repeating numbers
+	//if repeating number greater than minimum weeks owned attribute
+		//fetch user info from owner table where id = itemName()
+
+5. select * from `lab6.owner` where last_name is not null  and first_name is not null
+   select * from `lab6.unit` where name = 'Evergreen'
+   //loop through returned results
+   		//loop through attributes and store ids once 
+   			//fetch user info from owner table where id = itemName()
+
+
+6.  select itemName() from `lab6.owner` where last_name = 'Smith' and first_name = 'John'
+	select * from `lab6.unit` where itemName() is not null
+	//loop through returned results (rows)
+		//loop through unit table with attribute starts with "week"
+			//if attribute is not null
+				//if value == itemName() (user id)
+					// store attribute name
+		//if any attributes stored
+			//get name and number attribute from row 
+			//add to results
+
+7. 	select * from `lab6.owner` where last_name is not null  and first_name is not null
+	select * from `lab6.unit` where number = '203' and name = 'Evergreen'
+	//loop through attributes starting at week 1
+		//if value != null
+			//fetch owner first and last name 
+		//increment week count 
+
+8.  select * from `lab6.owner` where last_name is not null  and first_name is not null
+	select week10 from `lab6.owner` where week10 is not null
+	//loop through returned results (rows)
+		//if week10 value not empty (because is not null still returns some empty)
+			//lookup owner by value 
+
+
+		
+
+
+
+
