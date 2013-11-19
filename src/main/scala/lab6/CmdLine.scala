@@ -212,9 +212,9 @@ object CmdLine {
     val ownerMap = new java.util.HashMap[String, Integer]()
 
     for (item: Item <- connection.select(ownerRequest).getItems) {
+      var lastName :String = null
+      var firstName :String = null
 
-      var lastName: String = null
-      var firstName: String = null
       var id: Integer = null
 
       //for each attrubute of row
@@ -230,7 +230,6 @@ object CmdLine {
 
       ownerMap.put(s"$lastName,$firstName", id)
     }
-
 
     val idList = new util.ArrayList[Integer]()
     for (item: Item <- connection.select(unitRequest).getItems) {
@@ -311,15 +310,17 @@ object CmdLine {
     }
   }
 
+  //unit name and number, get all owners and their weeks
   def doStep7(scan: Scanner) {
     print("unit name: ")
     val unitName = Try(scan.nextLine()).get
     print("unit number: ")
-    val unitNumber = Try(scan.nextInt()).get
+    val unitNumber = Try(scan.nextLine()).get
 
     val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
     val unitRequest = new SelectRequest(s"select * from `$unitDomain` where name = '$unitName'" +
       s" and number = '$unitNumber'")
+    //list of owners (first and last names) and ids
     val ownerMap = new java.util.HashMap[Integer, String]()
 
     for (item: Item <- connection.select(ownerRequest).getItems) {
@@ -353,8 +354,9 @@ object CmdLine {
       }
     }
 
-    //combine the ids with the name of the owner
-    for(unitOwnerId :Integer <- sortedWeek.keySet ){
+    //combine the unit id with the name of the owner
+    for(weekName : String<- sortedWeek.keySet() ){
+      val unitOwnerId = sortedWeek.get(weekName)
       for(ownerId: Integer<- ownerMap.keySet() ){
         if(unitOwnerId.equals(ownerId)){
           println(ownerId + " | " + ownerMap.get(ownerId).replace(",", " | ") )
