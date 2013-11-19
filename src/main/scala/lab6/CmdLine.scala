@@ -346,15 +346,15 @@ object CmdLine {
     for (item: Item <- connection.select(unitRequest).getItems) {
       for (attribute: Attribute <- item.getAttributes) {
         //get the weeks that have values
-        if(attribute.getName.startsWith("week") && attribute.getValue != null){
+        if(attribute.getName.startsWith("week") && !"".equals(attribute.getValue)){
           //store alphanumerically in a tree
-          sortedWeek.put(attribute.getName, Integer.parseInt(attribute.getValue));
+          sortedWeek.put(attribute.getName, Integer.parseInt(attribute.getValue))
         }
       }
     }
 
     //combine the ids with the name of the owner
-    for(unitOwnerId : Integer<- sortedWeek.keySet() ){
+    for(unitOwnerId :Integer <- sortedWeek.keySet ){
       for(ownerId: Integer<- ownerMap.keySet() ){
         if(unitOwnerId.equals(ownerId)){
           println(ownerId + " | " + ownerMap.get(ownerId).replace(",", " | ") )
@@ -366,7 +366,10 @@ object CmdLine {
 
   def doStep8(scan: Scanner) {
     print("week number: ")
-    val week = Try(scan.nextInt())
+    val week = Try(scan.nextLine()).get
+
+    val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
+    val unitRequest = new SelectRequest(s"select * from `$unitDomain` where week$week != ``")
     //    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.unit_name, ohu.unit_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.week_number = ? ORDER BY ohu.unit_name, ohu.unit_number, o.last_name, o.first_name;")
     //    prep.setInt(1, week.get)
     //    val results = prep.executeQuery()
