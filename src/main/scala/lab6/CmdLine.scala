@@ -76,9 +76,9 @@ object CmdLine {
       s"phone_number from `$ownerDomain` where last_name is not null order by last_name")
     val orderedList = new ListBuffer[(String, String)]
     for (item: Item <- connection.select(selectRequest).getItems) {
-      var lastName :String = null
-      var firstName :String = null
-      var phoneNumber :String = null
+      var lastName: String = null
+      var firstName: String = null
+      var phoneNumber: String = null
       println(s"Item: ${item.getName}")
       for (attribute: Attribute <- item.getAttributes) {
         attribute.getName match {
@@ -97,11 +97,11 @@ object CmdLine {
   //fetch all owners that own a user specified amount of weeks
   def doStep3(scan: Scanner) {
     print("Unit name: ")
-    val unitName = Try(scan.nextLine)
+    val unitName = Try(scan.nextLine).get
     print("Unit number: ")
-    val unitNumber = Try(scan.nextLine)
+    val unitNumber = Try(scan.nextLine).get
     print("Weeks owned: ")
-    val weeks = Try(scan.nextInt)
+    val weeks = Try(scan.nextLine).get
 
     val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
     val unitRequest = new SelectRequest(s"select * from `$unitDomain` where number = '$unitNumber' " +
@@ -111,8 +111,8 @@ object CmdLine {
 
     for (item: Item <- connection.select(ownerRequest).getItems) {
 
-      var lastName :String = null
-      var firstName :String = null
+      var lastName: String = null
+      var firstName: String = null
       var id: Integer = null
 
       //for each attrubute of row
@@ -134,17 +134,17 @@ object CmdLine {
     for (item: Item <- connection.select(unitRequest).getItems) {
 
       for (attribute: Attribute <- item.getAttributes) {
-        if(attribute.getName.startsWith("week") && attribute.getValue != null ){
-          idList.add(new Integer(attribute.getValue))
+        if (attribute.getName.startsWith("week") && !"".equals(attribute.getValue)) {
+          idList.add(Integer.valueOf(attribute.getValue))
         }
       }
     }
 
 
     for (id: Integer <- idList) {
-      if(Collections.frequency(idList, id) < weeks.get){
-        for(owner:String <- ownerMap.keySet()){
-          if(ownerMap.get(owner) == id){
+      if (Collections.frequency(idList, id) >= weeks.toInt) {
+        for (owner: String <- ownerMap.keySet()) {
+          if (id == ownerMap.get(owner)) {
             println(owner.replace(",", " | "))
           }
         }
@@ -190,8 +190,10 @@ object CmdLine {
       }
       val costPerWeek = unitCost / 52.0
       print(s"| $unitName | $unitNumber |")
-      map.entrySet().foreach{entry =>
-        print(s" ${ownerTable.get(entry.getKey, "first_name")} ${ownerTable.get(entry.getKey, "last_name")}, ${entry.getValue * costPerWeek} |")}
+      map.entrySet().foreach {
+        entry =>
+          print(s" ${ownerTable.get(entry.getKey, "first_name")} ${ownerTable.get(entry.getKey, "last_name")}, ${entry.getValue * costPerWeek} |")
+      }
       println()
     }
   }
@@ -212,6 +214,7 @@ object CmdLine {
     for (item: Item <- connection.select(ownerRequest).getItems) {
       var lastName :String = null
       var firstName :String = null
+
       var id: Integer = null
 
       //for each attrubute of row
@@ -232,7 +235,7 @@ object CmdLine {
     for (item: Item <- connection.select(unitRequest).getItems) {
 
       for (attribute: Attribute <- item.getAttributes) {
-        if(attribute.getName.startsWith("week") && attribute.getValue != null ){
+        if (attribute.getName.startsWith("week") && attribute.getValue != null) {
           idList.add(new Integer(attribute.getValue))
         }
       }
@@ -242,9 +245,9 @@ object CmdLine {
     for (id: Integer <- idList) {
       val numberOfWeeksOwned = Collections.frequency(idList, id)
 
-      if(numberOfWeeksOwned<= 1){
-        for(owner:String <- ownerMap.keySet()){
-          if(ownerMap.get(owner) == id){
+      if (numberOfWeeksOwned <= 1) {
+        for (owner: String <- ownerMap.keySet()) {
+          if (ownerMap.get(owner) == id) {
             println(owner.replace(",", " | ") + " | " + numberOfWeeksOwned)
           }
         }
@@ -305,8 +308,6 @@ object CmdLine {
     for (id: Integer <- idList) {
 
     }
-
-
   }
 
   //unit name and number, get all owners and their weeks
@@ -369,19 +370,19 @@ object CmdLine {
   def doStep8(scan: Scanner) {
     print("week number: ")
     val week = Try(scan.nextInt())
-//    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.unit_name, ohu.unit_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.week_number = ? ORDER BY ohu.unit_name, ohu.unit_number, o.last_name, o.first_name;")
-//    prep.setInt(1, week.get)
-//    val results = prep.executeQuery()
-//    println("unit name | unit number | last name | first name")
-//    while (results.next) {
-//      print(results.getString("unit_name"))
-//      print(" | ")
-//      print(results.getInt("unit_number"))
-//      print(" | ")
-//      print(results.getString("last_name"))
-//      print(" | ")
-//      println(results.getString("first_name"))
-//    }
+    //    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.unit_name, ohu.unit_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.week_number = ? ORDER BY ohu.unit_name, ohu.unit_number, o.last_name, o.first_name;")
+    //    prep.setInt(1, week.get)
+    //    val results = prep.executeQuery()
+    //    println("unit name | unit number | last name | first name")
+    //    while (results.next) {
+    //      print(results.getString("unit_name"))
+    //      print(" | ")
+    //      print(results.getInt("unit_number"))
+    //      print(" | ")
+    //      print(results.getString("last_name"))
+    //      print(" | ")
+    //      println(results.getString("first_name"))
+    //    }
   }
 
   def load(cmdLine: CommandLine) {
@@ -454,7 +455,7 @@ object CmdLine {
     return sdb
   }
 
-  def convertSelectResultToTable(results :SelectResult): Table[String, String, String] = {
+  def convertSelectResultToTable(results: SelectResult): Table[String, String, String] = {
     val retVal = HashBasedTable.create[String, String, String]()
     for (item: Item <- results.getItems) {
       for (attribute: Attribute <- item.getAttributes) {
