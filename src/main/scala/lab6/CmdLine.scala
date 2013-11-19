@@ -342,24 +342,14 @@ object CmdLine {
     val unitTable = convertSelectResultToTable(connection.select(unitRequest))
 
     for (row <- unitTable.rowKeySet()) {
-      val map = scala.collection.mutable.Map[String, String]()
       val unitName = unitTable.get(row, "name")
       val unitNumber = unitTable.get(row, "number")
-
-      val owner = unitTable.get(row, week)
+      val owner = unitTable.get(row, s"week$week")
 
       if (!"".equals(owner)) {
-        map += (owner -> week)
+        println(s"| $unitName | $unitNumber | ${ownerTable.get(owner,
+          "first_name")} ${ownerTable.get(owner, "last_name")}")
       }
-
-      print(s"| $unitName | $unitNumber |")
-
-      map.entrySet().foreach {
-        entry =>
-            print("key" + entry.getKey + " "  + entry.getValue)
-//          print(s" ${ownerTable.get(entry.getKey, "first_name")} ${ownerTable.get(entry.getKey, "last_name")}, ${entry.getValue} |")
-      }
-      println()
     }
   }
 
