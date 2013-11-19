@@ -14,7 +14,6 @@ import java.util
 import scala.collection.JavaConverters._
 import scala.collection.JavaConversions._
 import com.google.common.collect.{HashBasedTable, Table}
-import scala.util.control.Breaks._
 
 object CmdLine {
 
@@ -211,15 +210,15 @@ object CmdLine {
     val ownerTable = convertSelectResultToTable(connection.select(ownerRequest))
     val unitTable = convertSelectResultToTable(connection.select(unitRequest))
 
-    for(row <- unitTable.rowKeySet()){
+    for (row <- unitTable.rowKeySet()) {
       val map = scala.collection.mutable.Map[String, Int]()
       val unitName = unitTable.get(row, "name")
       val unitNumber = unitTable.get(row, "number")
 
-      for(i<- 1 until 52){
+      for (i <- 1 until 52) {
         val owner = unitTable.get(row, s"week$i")
 
-        if(!"".equals(owner)){
+        if (!"".equals(owner)) {
           val currentNumberOfOwnedWeeks = map.get(owner).getOrElse(0)
           map += owner -> (currentNumberOfOwnedWeeks + 1)
         }
@@ -234,56 +233,40 @@ object CmdLine {
     }
   }
 
+  //prompt for name, provide all unit names, number and week numbers that the person owns it
   def doStep6(scan: Scanner) {
-//    print("last name: ")
-//    val lastName = Try(scan.nextLine()).get
-//    print("first name: ")
-//    val firstName = Try(scan.nextLine()).get
-//
-//    val ownerRequest = new SelectRequest(s"select last_name, first_name " +
-//      s"from `$ownerDomain` where last_name = '$lastName' and first_name= '$firstName'")
-//    val unitRequest = new SelectRequest(s"select * from `$unitDomain`")
-//
-//    val ownerMap = new java.util.HashMap[Integer, String]()
-//    val unitList = new ListBuffer[Item]
-//
-//
-//    for (item: Item <- connection.select(ownerRequest).getItems) {
-//
-//      var lastName :String = null
-//      var firstName :String = null
-//      val id = Integer.valueOf(item.getName)
-//
-//      //for each attribute of row
-//      for (attribute: Attribute <- item.getAttributes) {
-//        //check the name of the attr and test if it matches
-//        attribute.getName match {
-//          case "last_name" => lastName = attribute.getValue
-//          case "first_name" => firstName = attribute.getValue
-//        }
-//      }
-//
-//      ownerMap.put(id, s"$lastName,$firstName")
-//    }
-//
-//    val idList = new util.ArrayList[Integer]()
-//
-//    for (item: Item <- connection.select(unitRequest).getItems) {
-//
-//      breakable { for (attribute: Attribute <- item.getAttributes) {
-//        if(attribute.getName.startsWith("week") && !"".equals(attribute.getValue)){
-//
-//          if(attribute.getValue == id){
-//            unitList.add(item)
-//            break()
-//          }
-//        }
-//      } }
-//    }
-//
-//    for (id: Integer <- idList) {
-//
-//    }
+    print("last name: ")
+    val lastName = Try(scan.nextLine()).get
+    print("first name: ")
+    val firstName = Try(scan.nextLine()).get
+
+    val ownerRequest = new SelectRequest(s"select last_name, first_name " +
+      s"from `$ownerDomain` where last_name = '$lastName' and first_name= '$firstName'")
+    val unitRequest = new SelectRequest(s"select * from `$unitDomain`")
+
+    val ownerTable = convertSelectResultToTable(connection.select(ownerRequest))
+    val unitTable = convertSelectResultToTable(connection.select(unitRequest))
+
+    for (row <- unitTable.rowKeySet()) {
+      val map = scala.collection.mutable.Map[String, String]()
+      val unitName = unitTable.get(row, "name")
+      val unitNumber = unitTable.get(row, "number")
+
+      for (i <- 1 until 52) {
+        val owner = unitTable.get(row, s"week$i")
+
+        if (!"".equals(owner)) {
+          map += owner -> s"week$i"
+        }
+      }
+
+      print(s"| $unitName | $unitNumber |")
+      map.entrySet().foreach {
+        entry =>
+          print(s" ${ownerTable.get(entry.getKey, "first_name")} ${ownerTable.get(entry.getKey, "last_name")}, ${entry.getValue} |")
+      }
+      println()
+    }
   }
 
   //unit name and number, get all owners and their weeks
@@ -300,8 +283,8 @@ object CmdLine {
     val ownerMap = new java.util.HashMap[Integer, String]()
 
     for (item: Item <- connection.select(ownerRequest).getItems) {
-      var lastName :String = null
-      var firstName :String = null
+      var lastName: String = null
+      var firstName: String = null
       val id = Integer.valueOf(item.getName)
 
       //get the id so that the user name can be displayed after the fetch
@@ -315,7 +298,7 @@ object CmdLine {
         }
       }
 
-      ownerMap.put(id,s"$lastName,$firstName")
+      ownerMap.put(id, s"$lastName,$firstName")
     }
 
     val sortedWeek = new util.TreeMap[String, Integer]()
@@ -323,7 +306,7 @@ object CmdLine {
     for (item: Item <- connection.select(unitRequest).getItems) {
       for (attribute: Attribute <- item.getAttributes) {
         //get the weeks that have values
-        if(attribute.getName.startsWith("week") && !"".equals(attribute.getValue)){
+        if (attribute.getName.startsWith("week") && !"".equals(attribute.getValue)) {
           //store alphanumerically in a tree
           sortedWeek.put(attribute.getName, Integer.parseInt(attribute.getValue))
         }
@@ -331,11 +314,11 @@ object CmdLine {
     }
 
     //combine the unit id with the name of the owner
-    for(weekName : String<- sortedWeek.keySet() ){
+    for (weekName: String <- sortedWeek.keySet()) {
       val unitOwnerId = sortedWeek.get(weekName)
-      for(ownerId: Integer<- ownerMap.keySet() ){
-        if(unitOwnerId.equals(ownerId)){
-          println(ownerId + " | " + ownerMap.get(ownerId).replace(",", " | ") )
+      for (ownerId: Integer <- ownerMap.keySet()) {
+        if (unitOwnerId.equals(ownerId)) {
+          println(ownerId + " | " + ownerMap.get(ownerId).replace(",", " | "))
         }
       }
 
