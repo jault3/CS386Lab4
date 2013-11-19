@@ -279,6 +279,7 @@ object CmdLine {
 //    }
   }
 
+  //prompt for name, provide all unit names, number and week numbers that the person owns it
   def doStep6(scan: Scanner) {
     print("last name: ")
     val lastName = Try(scan.nextLine()).get
@@ -289,48 +290,69 @@ object CmdLine {
       s"from `$ownerDomain` where last_name = '$lastName' and first_name= '$firstName'")
     val unitRequest = new SelectRequest(s"select * from `$unitDomain`")
 
-    val ownerMap = new java.util.HashMap[Integer, String]()
-    val unitList = new ListBuffer[Item]
-    var id: Integer = null
+    val ownerTable = convertSelectResultToTable(connection.select(ownerRequest))
+    val unitTable = convertSelectResultToTable(connection.select(unitRequest))
 
+    for(row <- unitTable.rowKeySet()){
+      val map = scala.collection.mutable.Map[String, String]()
+      val unitName = unitTable.get(row, "name")
+      val unitNumber = unitTable.get(row, "number")
 
-    for (item: Item <- connection.select(ownerRequest).getItems) {
+      for(i<- 1 until 52){
+        val owner = unitTable.get(row, s"week$i")
 
-      var lastName :String = null
-      var firstName :String = null
-
-      //for each attribute of row
-      for (attribute: Attribute <- item.getAttributes) {
-        //check the name of the attr and test if it matches
-        attribute.getName match {
-          case "last_name" => lastName = attribute.getValue
-          case "first_name" => firstName = attribute.getValue
-          case "itemName()" => id = Integer.valueOf(attribute.getValue)
+        if(!"".equals(owner)){
+          map += owner -> s"week$i"
         }
       }
 
-      ownerMap.put(id,s"$lastName,$firstName")
-    }
-
-    val idList = new util.ArrayList[Integer]()
-    var keepLooping = true
-
-    for (item: Item <- connection.select(unitRequest).getItems) {
-
-      for (attribute: Attribute <- item.getAttributes) {
-        if(attribute.getName.startsWith("week") && attribute.getValue != null && keepLooping){
-
-          if(attribute.getValue == id){
-            unitList.add(item)
-            keepLooping = false
-          }
-        }
+      print(s"| $unitName | $unitNumber |")
+      map.entrySet().foreach {
+        entry =>
+          print(s" ${ownerTable.get(entry.getKey, "first_name")} ${ownerTable.get(entry.getKey, "last_name")}, ${entry.getValue} |")
       }
+      println()
     }
 
-    for (id: Integer <- idList) {
-
-    }
+//    var id: Integer = null
+//
+//    for (item: Item <- connection.select(ownerRequest).getItems) {
+//
+//      var lastName :String = null
+//      var firstName :String = null
+//
+//      //for each attribute of row
+//      for (attribute: Attribute <- item.getAttributes) {
+//        //check the name of the attr and test if it matches
+//        attribute.getName match {
+//          case "last_name" => lastName = attribute.getValue
+//          case "first_name" => firstName = attribute.getValue
+//          case "itemName()" => id = Integer.valueOf(attribute.getValue)
+//        }
+//      }
+//
+//      ownerMap.put(id,s"$lastName,$firstName")
+//    }
+//
+//    val idList = new util.ArrayList[Integer]()
+//    var keepLooping = true
+//
+//    for (item: Item <- connection.select(unitRequest).getItems) {
+//
+//      for (attribute: Attribute <- item.getAttributes) {
+//        if(attribute.getName.startsWith("week") && attribute.getValue != null && keepLooping){
+//
+//          if(attribute.getValue == id){
+//            unitList.add(item)
+//            keepLooping = false
+//          }
+//        }
+//      }
+//    }
+//
+//    for (id: Integer <- idList) {
+//
+//    }
   }
 
   //unit name and number, get all owners and their weeks
