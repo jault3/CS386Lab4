@@ -261,6 +261,7 @@ object CmdLine {
       }
 
       print(s"| $unitName | $unitNumber |")
+
       map.entrySet().foreach {
         entry =>
           print(s" ${ownerTable.get(entry.getKey, "first_name")} ${ownerTable.get(entry.getKey, "last_name")}, ${entry.getValue} |")
@@ -333,19 +334,28 @@ object CmdLine {
     val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
     val unitRequest = new SelectRequest(s"select * from `$unitDomain` where week$week != ``")
 
-    //    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.unit_name, ohu.unit_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.week_number = ? ORDER BY ohu.unit_name, ohu.unit_number, o.last_name, o.first_name;")
-    //    prep.setInt(1, week.get)
-    //    val results = prep.executeQuery()
-    //    println("unit name | unit number | last name | first name")
-    //    while (results.next) {
-    //      print(results.getString("unit_name"))
-    //      print(" | ")
-    //      print(results.getInt("unit_number"))
-    //      print(" | ")
-    //      print(results.getString("last_name"))
-    //      print(" | ")
-    //      println(results.getString("first_name"))
-    //    }
+    val ownerTable = convertSelectResultToTable(connection.select(ownerRequest))
+    val unitTable = convertSelectResultToTable(connection.select(unitRequest))
+
+    for (row <- unitTable.rowKeySet()) {
+      val map = scala.collection.mutable.Map[String, String]()
+      val unitName = unitTable.get(row, "name")
+      val unitNumber = unitTable.get(row, "number")
+
+      val owner = unitTable.get(row, week)
+
+      if (!"".equals(owner)) {
+        map += owner -> week
+      }
+
+      print(s"| $unitName | $unitNumber |")
+
+      map.entrySet().foreach {
+        entry =>
+          print(s" ${ownerTable.get(entry.getKey, "first_name")} ${ownerTable.get(entry.getKey, "last_name")}, ${entry.getValue} |")
+      }
+      println()
+    }
   }
 
   def load(cmdLine: CommandLine) {
