@@ -199,9 +199,9 @@ object CmdLine {
   //fetch all owners who own one or more weeks
   def doStep5(scan: Scanner) {
     print("Unit name: ")
-    val unitName = Try(scan.nextLine())
+    val unitName = Try(scan.nextLine()).get
     print("Unit number: ")
-    val unitNumber = Try(scan.nextInt)
+    val unitNumber = Try(scan.nextLine).get
 
     val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
     val unitRequest = new SelectRequest(s"select * from `$unitDomain` where number = '$unitNumber' " +
@@ -233,7 +233,7 @@ object CmdLine {
     for (item: Item <- connection.select(unitRequest).getItems) {
 
       for (attribute: Attribute <- item.getAttributes) {
-        if (attribute.getName.startsWith("week") && attribute.getValue != null) {
+        if (attribute.getName.startsWith("week") && !"".equals(attribute.getValue)) {
           idList.add(new Integer(attribute.getValue))
         }
       }
