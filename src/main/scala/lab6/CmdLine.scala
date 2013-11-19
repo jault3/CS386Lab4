@@ -13,6 +13,7 @@ import scala.collection.mutable.ListBuffer
 import java.util
 import scala.collection.JavaConverters._
 import scala.collection.JavaConversions._
+import com.google.common.collect.{HashBasedTable, Table}
 
 object CmdLine {
 
@@ -93,11 +94,12 @@ object CmdLine {
     }
   }
 
+  //fetch all owners that own a user specified amount of weeks
   def doStep3(scan: Scanner) {
     print("Unit name: ")
     val unitName = Try(scan.nextLine)
     print("Unit number: ")
-    val unitNumber = Try(scan.nextInt)
+    val unitNumber = Try(scan.nextLine)
     print("Weeks owned: ")
     val weeks = Try(scan.nextInt)
 
@@ -120,6 +122,7 @@ object CmdLine {
           case "last_name" => lastName = attribute.getValue
           case "first_name" => firstName = attribute.getValue
           case "itemName()" => id = Integer.valueOf(attribute.getValue)
+          case _ => // Do nothing
         }
       }
 
@@ -152,26 +155,48 @@ object CmdLine {
 
   def doStep4(scan: Scanner) {
     print("Unit name: ")
-    val unitName = Try(scan.nextLine)
+    val unitName = Try(scan.nextLine).get
     print("Unit number: ")
-    val unitNumber = Try(scan.nextInt)
+    val unitNumber = Try(scan.nextLine).get
 
-//    val prep = connection.prepareStatement("SELECT last_name, first_name, CAST(cost/(SELECT COUNT(DISTINCT week_number) FROM unit, owner, owner_has_unit WHERE unit_name = ? AND unit_number = ? AND owner.id = owner_id AND unit.name = unit_name AND unit.number = unit_number)*COUNT(DISTINCT week_number) AS DECIMAL(40,2)) AS share FROM unit, owner, owner_has_unit WHERE unit_name = ? AND unit_number = ? AND owner.id = owner_id AND unit.name = unit_name AND unit.number = unit_number GROUP BY last_name, first_name;")
-//    prep.setString(1, unitName.get)
-//    prep.setInt(2, unitNumber.get)
-//    prep.setString(3, unitName.get)
-//    prep.setInt(4, unitNumber.get)
-//    val results = prep.executeQuery
-//    println("last name | first name | share owed")
-//    while (results.next) {
-//      print(results.getString("last_name"))
-//      print(" | ")
-//      print(results.getString("first_name"))
-//      print(" | ")
-//      println(results.getDouble("share"))
-//    }
+    val unitRequest = new SelectRequest(s"select * from `$unitDomain` where number = " +
+      s"'$unitNumber' " +
+      s"and name = '$unitName'")
+    val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
+
+    val unitTable = convertSelectResultToTable(connection.select(unitRequest))
+    val ownerTable = convertSelectResultToTable(connection.select(ownerRequest))
+
+    // Figure out how many weeks each person owns
+    // For every row...
+    for (row <- unitTable.rowKeySet()) {
+      val map = scala.collection.mutable.Map[String, Int]()
+      // get the unit name
+      val unitName = unitTable.get(row, "name")
+      // get the unit number
+      val unitNumber = unitTable.get(row, "number")
+      // know the unit cost
+      val unitCost = unitTable.get(row, "cost").toInt
+      // For every week
+      for (i <- 1 until 52) {
+        // get the owner
+        val owner = unitTable.get(row, s"week$i")
+        // if the week has an owner
+        if (!"".equals(owner)) {
+          // update the owner's week count
+          val currentNumberOfOwnedWeeks = map.get(owner).getOrElse(0)
+          map += owner -> (currentNumberOfOwnedWeeks + 1)
+        }
+      }
+      val costPerWeek = unitCost / 52.0
+      print(s"| $unitName | $unitNumber |")
+      map.entrySet().foreach{entry =>
+        print(s" ${ownerTable.get(entry.getKey, "first_name")} ${ownerTable.get(entry.getKey, "last_name")}, ${entry.getValue * costPerWeek} |")}
+      println()
+    }
   }
 
+  //fetch all owners who own one or more weeks
   def doStep5(scan: Scanner) {
     print("Unit name: ")
     val unitName = Try(scan.nextLine())
@@ -412,7 +437,7 @@ object CmdLine {
       }
       retVal.add(new ReplaceableItem(entry(0)).withAttributes(attributes.asJava))
     }
-    return retVal
+    retVal
   }
 
   def setupCommandLine(args: Array[String]): CommandLine = {
@@ -437,5 +462,15 @@ object CmdLine {
     val sdb = new AmazonSimpleDBClient(credentials)
     sdb.setRegion(Region.getRegion(Regions.US_EAST_1))
     return sdb
+  }
+
+  def convertSelectResultToTable(results :SelectResult): Table[String, String, String] = {
+    val retVal = HashBasedTable.create[String, String, String]()
+    for (item: Item <- results.getItems) {
+      for (attribute: Attribute <- item.getAttributes) {
+        retVal.put(item.getName, attribute.getName, attribute.getValue)
+      }
+    }
+    retVal
   }
 }
