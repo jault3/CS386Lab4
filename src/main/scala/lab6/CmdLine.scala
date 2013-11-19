@@ -329,8 +329,13 @@ object CmdLine {
     print("week number: ")
     val week = Try(scan.nextLine()).get
 
-    val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
-    val unitRequest = new SelectRequest(s"select * from `$unitDomain` where week$week != ``")
+    val ownerRequest = new SelectRequest(s"select last_name, first_name from `$ownerDomain`")
+    val unitRequest = new SelectRequest(s"select * from `$unitDomain` where week$week != ''")
+
+    val ownerTable = convertSelectResultToTable(connection.select(ownerRequest))
+    val unitTable = convertSelectResultToTable(connection.select(unitRequest))
+
+
     //    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.unit_name, ohu.unit_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.week_number = ? ORDER BY ohu.unit_name, ohu.unit_number, o.last_name, o.first_name;")
     //    prep.setInt(1, week.get)
     //    val results = prep.executeQuery()
