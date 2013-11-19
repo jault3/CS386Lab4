@@ -197,7 +197,7 @@ object CmdLine {
     }
   }
 
-  //fetch all owners who own one or more weeks
+  //fetch all owners who own one or more weeks and show how many weeks they own it
   def doStep5(scan: Scanner) {
     print("Unit name: ")
     val unitName = Try(scan.nextLine()).get
@@ -208,51 +208,76 @@ object CmdLine {
     val unitRequest = new SelectRequest(s"select * from `$unitDomain` where number = '$unitNumber' " +
       s"and name = '$unitName'")
 
-    val ownerMap = new java.util.HashMap[String, Integer]()
+    val ownerTable = convertSelectResultToTable(connection.select(ownerRequest))
+    val unitTable = convertSelectResultToTable(connection.select(unitRequest))
 
-    for (item: Item <- connection.select(ownerRequest).getItems) {
-      var lastName :String = null
-      var firstName :String = null
+    for(row <- unitTable.rowKeySet()){
+      val map = scala.collection.mutable.Map[String, Int]()
+      val unitName = unitTable.get(row, "name")
+      val unitNumber = unitTable.get(row, "number")
 
-      var id: Integer = null
+      for(i<- 1 until 52){
+        val owner = unitTable.get(row, s"week$i")
 
-      //for each attribute of row
-      for (attribute: Attribute <- item.getAttributes) {
-        //check the name of the attr and test if it matches
-        attribute.getName match {
-          case "last_name" => lastName = attribute.getValue
-          case "first_name" => firstName = attribute.getValue
-          case "itemName()" => id = Integer.valueOf(attribute.getValue)
-          case _ => // Do nothing
+        if(!"".equals(owner)){
+          val currentNumberOfOwnedWeeks = map.get(owner).getOrElse(0)
+          map += owner -> (currentNumberOfOwnedWeeks + 1)
         }
       }
 
-      ownerMap.put(s"$lastName,$firstName", id)
-    }
-
-    val idList = new util.ArrayList[Integer]()
-    for (item: Item <- connection.select(unitRequest).getItems) {
-
-      for (attribute: Attribute <- item.getAttributes) {
-        if (attribute.getName.startsWith("week") && !"".equals(attribute.getValue)) {
-          idList.add(new Integer(attribute.getValue))
-        }
+      print(s"| $unitName | $unitNumber |")
+      map.entrySet().foreach {
+        entry =>
+          print(s" ${ownerTable.get(entry.getKey, "first_name")} ${ownerTable.get(entry.getKey, "last_name")}, ${entry.getValue} |")
       }
+      println()
     }
 
 
-    for (id: Integer <- idList) {
-      val numberOfWeeksOwned = Collections.frequency(idList, id)
 
-      if (numberOfWeeksOwned <= 1) {
-        for (owner: String <- ownerMap.keySet()) {
-          if (ownerMap.get(owner) == id) {
-            println(owner.replace(",", " | ") + " | " + numberOfWeeksOwned)
-          }
-        }
-
-      }
-    }
+//    for (item: Item <- connection.select(ownerRequest).getItems) {
+//      var lastName :String = null
+//      var firstName :String = null
+//
+//      var id: Integer = null
+//
+//      //for each attrubute of row
+//      for (attribute: Attribute <- item.getAttributes) {
+//        //check the name of the attr and test if it matches
+//        attribute.getName match {
+//          case "last_name" => lastName = attribute.getValue
+//          case "first_name" => firstName = attribute.getValue
+//          case "itemName()" => id = Integer.valueOf(attribute.getValue)
+//          case _ => // Do nothing
+//        }
+//      }
+//
+//      ownerMap.put(s"$lastName,$firstName", id)
+//    }
+//
+//    val idList = new util.ArrayList[Integer]()
+//    for (item: Item <- connection.select(unitRequest).getItems) {
+//
+//      for (attribute: Attribute <- item.getAttributes) {
+//        if (attribute.getName.startsWith("week") && attribute.getValue != null) {
+//          idList.add(new Integer(attribute.getValue))
+//        }
+//      }
+//    }
+//
+//
+//    for (id: Integer <- idList) {
+//      val numberOfWeeksOwned = Collections.frequency(idList, id)
+//
+//      if (numberOfWeeksOwned <= 1) {
+//        for (owner: String <- ownerMap.keySet()) {
+//          if (ownerMap.get(owner) == id) {
+//            println(owner.replace(",", " | ") + " | " + numberOfWeeksOwned)
+//          }
+//        }
+//
+//      }
+//    }
   }
 
   def doStep6(scan: Scanner) {
