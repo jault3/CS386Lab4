@@ -103,7 +103,7 @@ object CmdLine {
     print("Weeks owned: ")
     val weeks = Try(scan.nextLine).get
 
-    val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
+    val ownerRequest = new SelectRequest(s"select last_name, first_name from `$ownerDomain`")
     val unitRequest = new SelectRequest(s"select * from `$unitDomain` where number = '$unitNumber' " +
       s"and name = '$unitName'")
 
@@ -113,16 +113,14 @@ object CmdLine {
 
       var lastName: String = null
       var firstName: String = null
-      var id: Integer = null
+      val id = Integer.valueOf(item.getName)
 
-      //for each attrubute of row
+      //for each attribute of row
       for (attribute: Attribute <- item.getAttributes) {
         //check the name of the attr and test if it matches
         attribute.getName match {
           case "last_name" => lastName = attribute.getValue
           case "first_name" => firstName = attribute.getValue
-          case "itemName()" => id = Integer.valueOf(attribute.getValue)
-          case _ => // Do nothing
         }
       }
 
@@ -141,11 +139,12 @@ object CmdLine {
     }
 
 
-    for (id: Integer <- idList) {
+    val uniqueIds = new util.HashSet[Integer](idList)
+    for (id: Integer <- uniqueIds) {
       if (Collections.frequency(idList, id) >= weeks.toInt) {
         for (owner: String <- ownerMap.keySet()) {
           if (id == ownerMap.get(owner)) {
-            println(owner.replace(",", " | "))
+            println(s"| ${owner.replace(",", " | ")} |")
           }
         }
 
@@ -159,9 +158,8 @@ object CmdLine {
     print("Unit number: ")
     val unitNumber = Try(scan.nextLine).get
 
-    val unitRequest = new SelectRequest(s"select * from `$unitDomain` where number = " +
-      s"'$unitNumber' " +
-      s"and name = '$unitName'")
+    val unitRequest = new SelectRequest(s"select * from `$unitDomain` where number = '$unitNumber'" +
+      s" and name = '$unitName'")
     val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
 
     val unitTable = convertSelectResultToTable(connection.select(unitRequest))
@@ -201,9 +199,9 @@ object CmdLine {
   //fetch all owners who own one or more weeks and show how many weeks they own it
   def doStep5(scan: Scanner) {
     print("Unit name: ")
-    val unitName = Try(scan.nextLine())
+    val unitName = Try(scan.nextLine()).get
     print("Unit number: ")
-    val unitNumber = Try(scan.nextInt)
+    val unitNumber = Try(scan.nextLine).get
 
     val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
     val unitRequest = new SelectRequest(s"select * from `$unitDomain` where number = '$unitNumber' " +
@@ -226,6 +224,12 @@ object CmdLine {
         }
       }
 
+      print(s"| $unitName | $unitNumber |")
+      map.entrySet().foreach {
+        entry =>
+          print(s" ${ownerTable.get(entry.getKey, "first_name")} ${ownerTable.get(entry.getKey, "last_name")}, ${entry.getValue} |")
+      }
+      println()
     }
 
 
@@ -355,6 +359,7 @@ object CmdLine {
           case "last_name" => lastName = attribute.getValue
           case "first_name" => firstName = attribute.getValue
           case "itemName()" => id = Integer.valueOf(attribute.getValue)
+          case _ => // Do Nothing
         }
       }
 
