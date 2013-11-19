@@ -210,7 +210,6 @@ object CmdLine {
     val ownerMap = new java.util.HashMap[String, Integer]()
 
     for (item: Item <- connection.select(ownerRequest).getItems) {
-
       var lastName :String = null
       var firstName :String = null
       var id: Integer = null
@@ -228,7 +227,6 @@ object CmdLine {
 
       ownerMap.put(s"$lastName,$firstName", id)
     }
-
 
     val idList = new util.ArrayList[Integer]()
     for (item: Item <- connection.select(unitRequest).getItems) {
@@ -311,6 +309,7 @@ object CmdLine {
 
   }
 
+  //unit name and number, get all owners and their weeks
   def doStep7(scan: Scanner) {
     print("unit name: ")
     val unitName = Try(scan.nextLine()).get
@@ -320,6 +319,7 @@ object CmdLine {
     val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
     val unitRequest = new SelectRequest(s"select * from `$unitDomain` where name = '$unitName'" +
       s" and number = '$unitNumber'")
+    //list of owners (first and last names) and ids
     val ownerMap = new java.util.HashMap[Integer, String]()
 
     for (item: Item <- connection.select(ownerRequest).getItems) {
@@ -353,8 +353,10 @@ object CmdLine {
       }
     }
 
-    //combine the ids with the name of the owner
-    for(unitOwnerId : Integer<- sortedWeek.keySet() ){
+    //combine the unit id with the name of the owner
+    for(weekName : String<- sortedWeek.keySet() ){
+      val unitOwnerId = sortedWeek.get(weekName)
+
       for(ownerId: Integer<- ownerMap.keySet() ){
         if(unitOwnerId.equals(ownerId)){
           println(ownerId + " | " + ownerMap.get(ownerId).replace(",", " | ") )
@@ -362,18 +364,6 @@ object CmdLine {
       }
 
     }
-//    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.week_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.unit_name = ? AND ohu.unit_number = ? ORDER BY ohu.week_number;")
-//    prep.setString(1, unitName.get)
-//    prep.setInt(2, unitNumber.get)
-//    val results = prep.executeQuery()
-//    println("week | last name | first name")
-//    while (results.next) {
-//      print(results.getInt("week_number"))
-//      print(" | ")
-//      print(results.getString("last_name"))
-//      print(" | ")
-//      println(results.getString("first_name"))
-//    }
   }
 
   def doStep8(scan: Scanner) {
