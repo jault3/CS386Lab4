@@ -232,104 +232,58 @@ object CmdLine {
       }
       println()
     }
+  }
 
-
-
+  def doStep6(scan: Scanner) {
+//    print("last name: ")
+//    val lastName = Try(scan.nextLine()).get
+//    print("first name: ")
+//    val firstName = Try(scan.nextLine()).get
+//
+//    val ownerRequest = new SelectRequest(s"select last_name, first_name " +
+//      s"from `$ownerDomain` where last_name = '$lastName' and first_name= '$firstName'")
+//    val unitRequest = new SelectRequest(s"select * from `$unitDomain`")
+//
+//    val ownerMap = new java.util.HashMap[Integer, String]()
+//    val unitList = new ListBuffer[Item]
+//
+//
 //    for (item: Item <- connection.select(ownerRequest).getItems) {
+//
 //      var lastName :String = null
 //      var firstName :String = null
+//      val id = Integer.valueOf(item.getName)
 //
-//      var id: Integer = null
-//
-//      //for each attrubute of row
+//      //for each attribute of row
 //      for (attribute: Attribute <- item.getAttributes) {
 //        //check the name of the attr and test if it matches
 //        attribute.getName match {
 //          case "last_name" => lastName = attribute.getValue
 //          case "first_name" => firstName = attribute.getValue
-//          case "itemName()" => id = Integer.valueOf(attribute.getValue)
-//          case _ => // Do nothing
 //        }
 //      }
 //
-//      ownerMap.put(s"$lastName,$firstName", id)
+//      ownerMap.put(id, s"$lastName,$firstName")
 //    }
 //
 //    val idList = new util.ArrayList[Integer]()
+//
 //    for (item: Item <- connection.select(unitRequest).getItems) {
 //
-//      for (attribute: Attribute <- item.getAttributes) {
-//        if (attribute.getName.startsWith("week") && attribute.getValue != null) {
-//          idList.add(new Integer(attribute.getValue))
-//        }
-//      }
-//    }
+//      breakable { for (attribute: Attribute <- item.getAttributes) {
+//        if(attribute.getName.startsWith("week") && !"".equals(attribute.getValue)){
 //
-//
-//    for (id: Integer <- idList) {
-//      val numberOfWeeksOwned = Collections.frequency(idList, id)
-//
-//      if (numberOfWeeksOwned <= 1) {
-//        for (owner: String <- ownerMap.keySet()) {
-//          if (ownerMap.get(owner) == id) {
-//            println(owner.replace(",", " | ") + " | " + numberOfWeeksOwned)
+//          if(attribute.getValue == id){
+//            unitList.add(item)
+//            break()
 //          }
 //        }
-//
-//      }
+//      } }
 //    }
-  }
-
-  def doStep6(scan: Scanner) {
-    print("last name: ")
-    val lastName = Try(scan.nextLine()).get
-    print("first name: ")
-    val firstName = Try(scan.nextLine()).get
-
-    val ownerRequest = new SelectRequest(s"select last_name, first_name " +
-      s"from `$ownerDomain` where last_name = '$lastName' and first_name= '$firstName'")
-    val unitRequest = new SelectRequest(s"select * from `$unitDomain`")
-
-    val ownerMap = new java.util.HashMap[Integer, String]()
-    val unitList = new ListBuffer[Item]
-
-
-    for (item: Item <- connection.select(ownerRequest).getItems) {
-
-      var lastName :String = null
-      var firstName :String = null
-      val id = Integer.valueOf(item.getName)
-
-      //for each attribute of row
-      for (attribute: Attribute <- item.getAttributes) {
-        //check the name of the attr and test if it matches
-        attribute.getName match {
-          case "last_name" => lastName = attribute.getValue
-          case "first_name" => firstName = attribute.getValue
-        }
-      }
-
-      ownerMap.put(id, s"$lastName,$firstName")
-    }
-
-    val idList = new util.ArrayList[Integer]()
-
-    for (item: Item <- connection.select(unitRequest).getItems) {
-
-      breakable { for (attribute: Attribute <- item.getAttributes) {
-        if(attribute.getName.startsWith("week") && !"".equals(attribute.getValue)){
-
-          if(attribute.getValue == id){
-            unitList.add(item)
-            break()
-          }
-        }
-      } }
-    }
-
-    for (id: Integer <- idList) {
-
-    }
+//
+//    for (id: Integer <- idList) {
+//
+//    }
   }
 
   //unit name and number, get all owners and their weeks
@@ -339,7 +293,7 @@ object CmdLine {
     print("unit number: ")
     val unitNumber = Try(scan.nextLine()).get
 
-    val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
+    val ownerRequest = new SelectRequest(s"select last_name, first_name from `$ownerDomain`")
     val unitRequest = new SelectRequest(s"select * from `$unitDomain` where name = '$unitName'" +
       s" and number = '$unitNumber'")
     //list of owners (first and last names) and ids
@@ -348,7 +302,7 @@ object CmdLine {
     for (item: Item <- connection.select(ownerRequest).getItems) {
       var lastName :String = null
       var firstName :String = null
-      var id:Integer = null
+      val id = Integer.valueOf(item.getName)
 
       //get the id so that the user name can be displayed after the fetch
       //for each attribute of row
@@ -357,7 +311,6 @@ object CmdLine {
         attribute.getName match {
           case "last_name" => lastName = attribute.getValue
           case "first_name" => firstName = attribute.getValue
-          case "itemName()" => id = Integer.valueOf(attribute.getValue)
           case _ => // Do Nothing
         }
       }
