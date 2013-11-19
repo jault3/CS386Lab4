@@ -14,6 +14,7 @@ import java.util
 import scala.collection.JavaConverters._
 import scala.collection.JavaConversions._
 import com.google.common.collect.{HashBasedTable, Table}
+import scala.util.control.Breaks._
 
 object CmdLine {
 
