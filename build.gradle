@@ -28,5 +28,5 @@ dependencies {
 }
 
 task bundle(type: OneJar) {
-    mainClass = 'lab4.CmdLine'
+    mainClass = 'lab6.CmdLine'
 }
