@@ -247,26 +247,30 @@ object CmdLine {
     val ownerTable = convertSelectResultToTable(connection.select(ownerRequest))
     val unitTable = convertSelectResultToTable(connection.select(unitRequest))
 
+    // make the owner id equal the first row we find
+    val ownerId = ownerTable.rowKeySet().toArray(new Array[String](0))(0)
+
     for (row <- unitTable.rowKeySet()) {
-      val map = scala.collection.mutable.Map[String, String]()
+      val weeksOwned = scala.collection.mutable.MutableList[String]()
       val unitName = unitTable.get(row, "name")
       val unitNumber = unitTable.get(row, "number")
+      var foundOne = false
 
       for (i <- 1 until 52) {
         val owner = unitTable.get(row, s"week$i")
 
-        if (!"".equals(owner)) {
-          map += owner -> s"week$i"
+        if (ownerId.equals(owner)) {
+          weeksOwned += s"week$i"
+          foundOne = true
         }
       }
 
-      print(s"| $unitName | $unitNumber |")
+      if (foundOne) {
+        print(s"| $unitName | $unitNumber |")
 
-      map.entrySet().foreach {
-        entry =>
-          print(s" ${ownerTable.get(entry.getKey, "first_name")} ${ownerTable.get(entry.getKey, "last_name")}, ${entry.getValue} |")
+        weeksOwned.foreach{string => print(s" $string")}
+        println(" |")
       }
-      println()
     }
   }
 
