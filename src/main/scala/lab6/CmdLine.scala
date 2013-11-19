@@ -232,52 +232,6 @@ object CmdLine {
       }
       println()
     }
-
-
-
-//    for (item: Item <- connection.select(ownerRequest).getItems) {
-//      var lastName :String = null
-//      var firstName :String = null
-//
-//      var id: Integer = null
-//
-//      //for each attrubute of row
-//      for (attribute: Attribute <- item.getAttributes) {
-//        //check the name of the attr and test if it matches
-//        attribute.getName match {
-//          case "last_name" => lastName = attribute.getValue
-//          case "first_name" => firstName = attribute.getValue
-//          case "itemName()" => id = Integer.valueOf(attribute.getValue)
-//          case _ => // Do nothing
-//        }
-//      }
-//
-//      ownerMap.put(s"$lastName,$firstName", id)
-//    }
-//
-//    val idList = new util.ArrayList[Integer]()
-//    for (item: Item <- connection.select(unitRequest).getItems) {
-//
-//      for (attribute: Attribute <- item.getAttributes) {
-//        if (attribute.getName.startsWith("week") && attribute.getValue != null) {
-//          idList.add(new Integer(attribute.getValue))
-//        }
-//      }
-//    }
-//
-//
-//    for (id: Integer <- idList) {
-//      val numberOfWeeksOwned = Collections.frequency(idList, id)
-//
-//      if (numberOfWeeksOwned <= 1) {
-//        for (owner: String <- ownerMap.keySet()) {
-//          if (ownerMap.get(owner) == id) {
-//            println(owner.replace(",", " | ") + " | " + numberOfWeeksOwned)
-//          }
-//        }
-//
-//      }
-//    }
   }
 
   //prompt for name, provide all unit names, number and week numbers that the person owns it
@@ -413,12 +367,14 @@ object CmdLine {
     }
   }
 
+  //prompt for week and get all owners who own units during that week
   def doStep8(scan: Scanner) {
     print("week number: ")
     val week = Try(scan.nextLine()).get
 
     val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
     val unitRequest = new SelectRequest(s"select * from `$unitDomain` where week$week != ``")
+
     //    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.unit_name, ohu.unit_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.week_number = ? ORDER BY ohu.unit_name, ohu.unit_number, o.last_name, o.first_name;")
     //    prep.setInt(1, week.get)
     //    val results = prep.executeQuery()
