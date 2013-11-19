@@ -14,6 +14,7 @@ import java.util
 import scala.collection.JavaConverters._
 import scala.collection.JavaConversions._
 import com.google.common.collect.{HashBasedTable, Table}
+import scala.util.control.Breaks._
 
 object CmdLine {
 
@@ -266,13 +267,13 @@ object CmdLine {
 
     val ownerMap = new java.util.HashMap[Integer, String]()
     val unitList = new ListBuffer[Item]
-    var id: Integer = null
 
 
     for (item: Item <- connection.select(ownerRequest).getItems) {
 
       var lastName :String = null
       var firstName :String = null
+      val id = Integer.valueOf(item.getName)
 
       //for each attribute of row
       for (attribute: Attribute <- item.getAttributes) {
@@ -280,27 +281,25 @@ object CmdLine {
         attribute.getName match {
           case "last_name" => lastName = attribute.getValue
           case "first_name" => firstName = attribute.getValue
-          case "itemName()" => id = Integer.valueOf(attribute.getValue)
         }
       }
 
-      ownerMap.put(id,s"$lastName,$firstName")
+      ownerMap.put(id, s"$lastName,$firstName")
     }
 
     val idList = new util.ArrayList[Integer]()
-    var keepLooping = true
 
     for (item: Item <- connection.select(unitRequest).getItems) {
 
-      for (attribute: Attribute <- item.getAttributes) {
-        if(attribute.getName.startsWith("week") && attribute.getValue != null && keepLooping){
+      breakable { for (attribute: Attribute <- item.getAttributes) {
+        if(attribute.getName.startsWith("week") && !"".equals(attribute.getValue)){
 
           if(attribute.getValue == id){
             unitList.add(item)
-            keepLooping = false
+            break()
           }
         }
-      }
+      } }
     }
 
     for (id: Integer <- idList) {
