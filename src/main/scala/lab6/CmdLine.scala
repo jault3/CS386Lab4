@@ -318,7 +318,7 @@ object CmdLine {
       val unitOwnerId = sortedWeek.get(weekName)
       for (ownerId: Integer <- ownerMap.keySet()) {
         if (unitOwnerId.equals(ownerId)) {
-          println(ownerId + " | " + ownerMap.get(ownerId).replace(",", " | "))
+          println(weekName + " | " + ownerMap.get(ownerId).replace(",", " | "))
         }
       }
 
