@@ -345,14 +345,15 @@ object CmdLine {
       val owner = unitTable.get(row, week)
 
       if (!"".equals(owner)) {
-        map += owner -> week
+        map += (owner -> week)
       }
 
       print(s"| $unitName | $unitNumber |")
 
       map.entrySet().foreach {
         entry =>
-          print(s" ${ownerTable.get(entry.getKey, "first_name")} ${ownerTable.get(entry.getKey, "last_name")}, ${entry.getValue} |")
+            print("key" + entry.getKey + " "  + entry.getValue)
+//          print(s" ${ownerTable.get(entry.getKey, "first_name")} ${ownerTable.get(entry.getKey, "last_name")}, ${entry.getValue} |")
       }
       println()
     }
