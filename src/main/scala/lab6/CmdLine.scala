@@ -1,7 +1,7 @@
 package lab6
 
 import org.apache.commons.cli.{DefaultParser, CommandLine, Options, Option}
-import java.util.Scanner
+import java.util.{Collections, Scanner}
 import scala.util.{Failure, Try, Success}
 import com.amazonaws.services.simpledb.{AmazonSimpleDBClient, AmazonSimpleDB}
 import com.amazonaws.auth.BasicAWSCredentials
@@ -105,19 +105,49 @@ object CmdLine {
     val unitRequest = new SelectRequest(s"select * from `$unitDomain` where number = '$unitNumber' " +
       s"and name = '$unitName'")
 
+    val ownerMap = new java.util.HashMap[String, Integer]()
+
+    for (item: Item <- connection.select(ownerRequest).getItems) {
+
+      var lastName :String = null
+      var firstName :String = null
+      var id: Integer = null
+
+      //for each attrubute of row
+      for (attribute: Attribute <- item.getAttributes) {
+        //check the name of the attr and test if it matches
+        attribute.getName match {
+          case "last_name" => lastName = attribute.getValue
+          case "first_name" => firstName = attribute.getValue
+          case "itemName()" => id = Integer.valueOf(attribute.getValue)
+        }
+      }
+
+      ownerMap.put(s"$lastName,$firstName", id)
+    }
 
 
-//    val prep = connection.prepareStatement("SELECT last_name, first_name FROM owner, owner_has_unit WHERE unit_name = ? AND unit_number = ? AND owner_id = id GROUP BY last_name, first_name HAVING COUNT(DISTINCT week_number) >= ?;")
-//    prep.setString(1, unitName.get)
-//    prep.setInt(2, unitNumber.get)
-//    prep.setInt(3, weeks.get)
-//    val results = prep.executeQuery
-//    println("last name | first name")
-//    while (results.next()) {
-//      print(results.getString("last_name"))
-//      print(" | ")
-//      println(results.getString("first_name"))
-//    }
+    val idList = new util.ArrayList[Integer]()
+    for (item: Item <- connection.select(unitRequest).getItems) {
+
+      for (attribute: Attribute <- item.getAttributes) {
+        if(attribute.getName.startsWith("week") && attribute.getValue != null ){
+          idList.add(new Integer(attribute.getValue))
+        }
+      }
+    }
+
+
+    for (id: Integer <- idList) {
+      if(Collections.frequency(idList, id) < weeks.get){
+        for(owner:String <- ownerMap.keySet()){
+          if(ownerMap.get(owner) == id){
+            println(owner.replace(",", " | "))
+          }
+        }
+
+      }
+    }
   }
 
   def doStep4(scan: Scanner) {
@@ -145,43 +175,168 @@ object CmdLine {
   def doStep5(scan: Scanner) {
     print("Unit name: ")
     val unitName = Try(scan.nextLine())
-//    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, count(*) weeks_owned FROM owner o, owner_has_unit u WHERE o.id = u.owner_id AND u.unit_name = ? GROUP BY o.last_name HAVING weeks_owned >= 1 ORDER BY o.last_name, o.first_name;")
-//    prep.setString(1, unitName.get)
-//    val results = prep.executeQuery()
-//    println("last name | first name | weeks owned")
-//    while (results.next) {
-//      print(results.getString("last_name"))
-//      print(" | ")
-//      print(results.getString("first_name"))
-//      print(" | ")
-//      println(results.getString("weeks_owned"))
-//    }
+    print("Unit number: ")
+    val unitNumber = Try(scan.nextInt)
+
+    val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
+    val unitRequest = new SelectRequest(s"select * from `$unitDomain` where number = '$unitNumber' " +
+      s"and name = '$unitName'")
+
+    val ownerMap = new java.util.HashMap[String, Integer]()
+
+    for (item: Item <- connection.select(ownerRequest).getItems) {
+
+      var lastName :String = null
+      var firstName :String = null
+      var id: Integer = null
+
+      //for each attrubute of row
+      for (attribute: Attribute <- item.getAttributes) {
+        //check the name of the attr and test if it matches
+        attribute.getName match {
+          case "last_name" => lastName = attribute.getValue
+          case "first_name" => firstName = attribute.getValue
+          case "itemName()" => id = Integer.valueOf(attribute.getValue)
+          case _ => // Do nothing
+        }
+      }
+
+      ownerMap.put(s"$lastName,$firstName", id)
+    }
+
+
+    val idList = new util.ArrayList[Integer]()
+    for (item: Item <- connection.select(unitRequest).getItems) {
+
+      for (attribute: Attribute <- item.getAttributes) {
+        if(attribute.getName.startsWith("week") && attribute.getValue != null ){
+          idList.add(new Integer(attribute.getValue))
+        }
+      }
+    }
+
+
+    for (id: Integer <- idList) {
+      val numberOfWeeksOwned = Collections.frequency(idList, id)
+
+      if(numberOfWeeksOwned<= 1){
+        for(owner:String <- ownerMap.keySet()){
+          if(ownerMap.get(owner) == id){
+            println(owner.replace(",", " | ") + " | " + numberOfWeeksOwned)
+          }
+        }
+
+      }
+    }
   }
 
   def doStep6(scan: Scanner) {
     print("last name: ")
-    val lastName = Try(scan.nextLine())
+    val lastName = Try(scan.nextLine()).get
     print("first name: ")
-    val firstName = Try(scan.nextLine())
-//    val prep = connection.prepareStatement("SELECT ohu.unit_name,ohu.unit_number, GROUP_CONCAT(ohu.week_number SEPARATOR ', ') AS weeks FROM owner o, owner_has_unit ohu WHERE o.last_name = ? AND o.first_name = ? AND o.id = ohu.owner_id GROUP BY ohu.unit_name, ohu.unit_number ORDER BY ohu.unit_name, ohu.unit_number, ohu.week_number;")
-//    prep.setString(1, lastName.get)
-//    prep.setString(2, firstName.get)
-//    val results = prep.executeQuery()
-//    println("unit name | unit number | weeks owned")
-//    while (results.next) {
-//      print(results.getString("unit_name"))
-//      print(" | ")
-//      print(results.getInt("unit_number"))
-//      print(" | ")
-//      println(results.getString("weeks"))
-//    }
+    val firstName = Try(scan.nextLine()).get
+
+    val ownerRequest = new SelectRequest(s"select last_name, first_name " +
+      s"from `$ownerDomain` where last_name = '$lastName' and first_name= '$firstName'")
+    val unitRequest = new SelectRequest(s"select * from `$unitDomain`")
+
+    val ownerMap = new java.util.HashMap[Integer, String]()
+    val unitList = new ListBuffer[Item]
+    var id: Integer = null
+
+
+    for (item: Item <- connection.select(ownerRequest).getItems) {
+
+      var lastName :String = null
+      var firstName :String = null
+
+      //for each attribute of row
+      for (attribute: Attribute <- item.getAttributes) {
+        //check the name of the attr and test if it matches
+        attribute.getName match {
+          case "last_name" => lastName = attribute.getValue
+          case "first_name" => firstName = attribute.getValue
+          case "itemName()" => id = Integer.valueOf(attribute.getValue)
+        }
+      }
+
+      ownerMap.put(id,s"$lastName,$firstName")
+    }
+
+    val idList = new util.ArrayList[Integer]()
+    var keepLooping = true
+
+    for (item: Item <- connection.select(unitRequest).getItems) {
+
+      for (attribute: Attribute <- item.getAttributes) {
+        if(attribute.getName.startsWith("week") && attribute.getValue != null && keepLooping){
+
+          if(attribute.getValue == id){
+            unitList.add(item)
+            keepLooping = false
+          }
+        }
+      }
+    }
+
+    for (id: Integer <- idList) {
+
+    }
+
+
   }
 
   def doStep7(scan: Scanner) {
     print("unit name: ")
-    val unitName = Try(scan.nextLine())
+    val unitName = Try(scan.nextLine()).get
     print("unit number: ")
-    val unitNumber = Try(scan.nextInt())
+    val unitNumber = Try(scan.nextInt()).get
+
+    val ownerRequest = new SelectRequest(s"select * from `$ownerDomain`")
+    val unitRequest = new SelectRequest(s"select * from `$unitDomain` where name = '$unitName'" +
+      s" and number = '$unitNumber'")
+    val ownerMap = new java.util.HashMap[Integer, String]()
+
+    for (item: Item <- connection.select(ownerRequest).getItems) {
+      var lastName :String = null
+      var firstName :String = null
+      var id:Integer = null
+
+      //get the id so that the user name can be displayed after the fetch
+      //for each attribute of row
+      for (attribute: Attribute <- item.getAttributes) {
+        //check the name of the attr and test if it matches
+        attribute.getName match {
+          case "last_name" => lastName = attribute.getValue
+          case "first_name" => firstName = attribute.getValue
+          case "itemName()" => id = Integer.valueOf(attribute.getValue)
+        }
+      }
+
+      ownerMap.put(id,s"$lastName,$firstName")
+    }
+
+    val sortedWeek = new util.TreeMap[String, Integer]()
+
+    for (item: Item <- connection.select(unitRequest).getItems) {
+      for (attribute: Attribute <- item.getAttributes) {
+        //get the weeks that have values
+        if(attribute.getName.startsWith("week") && attribute.getValue != null){
+          //store alphanumerically in a tree
+          sortedWeek.put(attribute.getName, Integer.parseInt(attribute.getValue));
+        }
+      }
+    }
+
+    //combine the ids with the name of the owner
+    for(unitOwnerId : Integer<- sortedWeek.keySet() ){
+      for(ownerId: Integer<- ownerMap.keySet() ){
+        if(unitOwnerId.equals(ownerId)){
+          println(ownerId + " | " + ownerMap.get(ownerId).replace(",", " | ") )
+        }
+      }
+
+    }
 //    val prep = connection.prepareStatement("SELECT o.last_name, o.first_name, ohu.week_number FROM owner o, owner_has_unit ohu WHERE ohu.owner_id = o.id AND ohu.unit_name = ? AND ohu.unit_number = ? ORDER BY ohu.week_number;")
 //    prep.setString(1, unitName.get)
 //    prep.setInt(2, unitNumber.get)
